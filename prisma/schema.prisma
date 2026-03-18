@@ -1,0 +1,63 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Model for the salon owner (your girlfriend)
+// Modelo para la dueña del salón
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String   // Hashed password
+  name      String
+  createdAt DateTime @default(now())
+}
+
+// Catalog of services offered
+// Catálogo de servicios ofrecidos
+model Service {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  duration    Int      // Duración en minutos
+  price       Float
+  description String?
+  isActive    Boolean  @default(true)
+  
+  // Relación Muchos a Muchos (Lado A)
+  // Guardamos una lista de IDs de citas que incluyen este servicio
+  appointmentIDs String[]      @db.ObjectId
+  appointments   Appointment[] @relation(fields: [appointmentIDs], references: [id])
+}
+
+// The actual booking made by a client
+// La cita agendada por una clienta
+model Appointment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt   DateTime @default(now())
+  date        DateTime // Fecha inicio
+  endDate     DateTime // Fecha fin (calculada sumando todas las duraciones)
+  clientName  String
+  clientPhone String
+  status      String   @default("CONFIRMED")
+  
+  // Relación Muchos a Muchos (Lado B)
+  // Guardamos una lista de IDs de servicios, no solo uno
+  serviceIDs  String[]  @db.ObjectId
+  services    Service[] @relation(fields: [serviceIDs], references: [id])
+}
+
+// Weekly working hours configuration
+// Configuración de horario laboral semanal
+model WorkSchedule {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  dayOfWeek Int      // 0 = Sunday, 1 = Monday, etc.
+  startTime String   // Format "HH:mm" (e.g., "10:00")
+  endTime   String   // Format "HH:mm" (e.g., "19:00")
+  isDayOff  Boolean  @default(false)
+}
