@@ -15,29 +15,55 @@ export default function ClientForm({ onSubmit, isSubmitting }: ClientFormProps) 
   
   const [isReturningUser, setIsReturningUser] = useState(false);
 
+  // Reemplaza el useEffect actual por este:
   useEffect(() => {
-    const savedName = localStorage.getItem('clientName');
-    const savedPhone = localStorage.getItem('clientPhone');
-    
-    if (savedName && savedPhone) {
-      setName(savedName);
-      setPhone(savedPhone);
-      setIsReturningUser(true);
+    try {
+      const raw = localStorage.getItem("tangible_client");
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+
+      // Expirar después de 90 días
+      const ninetyDays = 90 * 24 * 60 * 60 * 1000;
+      if (Date.now() - parsed.savedAt > ninetyDays) {
+        localStorage.removeItem("tangible_client");
+        return;
+      }
+
+      // Sanitizar al leer — solo letras, espacios y acentos
+      const safeName = parsed.name?.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, "").trim();
+      // Solo dígitos y + para el teléfono
+      const safePhone = parsed.phone?.replace(/[^0-9+]/g, "").trim();
+
+      if (safeName && safePhone) {
+        setName(safeName);
+        setPhone(safePhone);
+        setIsReturningUser(true);
+      }
+    } catch {
+      localStorage.removeItem("tangible_client");
     }
   }, []);
 
+  // Reemplaza handleSubmit por este:
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('clientName', name);
-    localStorage.setItem('clientPhone', phone);
+    try {
+      localStorage.setItem(
+        "tangible_client",
+        JSON.stringify({ name, phone, savedAt: Date.now() })
+      );
+    } catch {
+      // Si localStorage falla (ej. modo privado), no bloqueamos el flujo
+    }
     onSubmit(name, phone, websiteUrl);
   };
 
+  // Reemplaza handleReset por este:
   const handleReset = () => {
-    localStorage.removeItem('clientName');
-    localStorage.removeItem('clientPhone');
-    setName('');
-    setPhone('');
+    localStorage.removeItem("tangible_client");
+    setName("");
+    setPhone("");
     setIsReturningUser(false);
   };
 
