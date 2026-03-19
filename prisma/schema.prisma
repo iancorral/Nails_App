@@ -61,3 +61,21 @@ model WorkSchedule {
   endTime   String   // Format "HH:mm" (e.g., "19:00")
   isDayOff  Boolean  @default(false)
 }
+
+model BlockedDate {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  date      DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model Reminder {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  appointmentId String   @db.ObjectId
+  clientName    String
+  clientPhone   String
+  scheduledFor  DateTime
+  whatsappUrl   String
+  sent          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}

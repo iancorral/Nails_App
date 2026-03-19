@@ -222,7 +222,14 @@ export default function Home() {
         {selectedServices.length > 0 && bookingDate && showClientForm && (
            <section className="mt-8 animate-in fade-in slide-in-from-bottom-4 relative z-20">
              <div className="hand-drawn bg-white shadow-folk border-2 border-salon-brown overflow-hidden">
-                <ClientForm onSubmit={handleFinalBooking} isSubmitting={isSubmitting} />
+                <ClientForm 
+                  onSubmit={handleFinalBooking} 
+                  isSubmitting={isSubmitting}
+                  onGoBack={() => {
+                    setShowClientForm(false);
+                    setBookingDate(null);
+                  }}
+                />
              </div>
            </section>
         )}

@@ -18,7 +18,7 @@ export default function BookingCalendar({ onDateTimeSelect, totalDuration }: Boo
   const [error, setError] = useState<string | null>(null);
 
   const today = new Date();
-  const nextDays = Array.from({ length: 14 }, (_, i) => addDays(today, i));
+  const nextDays = Array.from({ length: 10 }, (_, i) => addDays(today, i));
 
   useEffect(() => {
     if (selectedDate) {

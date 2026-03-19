@@ -6,9 +6,10 @@ import { useState, useEffect } from 'react';
 interface ClientFormProps {
   onSubmit: (name: string, phone: string, websiteUrl?: string) => void;
   isSubmitting: boolean;
+  onGoBack?: () => void;
 }
 
-export default function ClientForm({ onSubmit, isSubmitting }: ClientFormProps) {
+export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientFormProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
@@ -45,21 +46,18 @@ export default function ClientForm({ onSubmit, isSubmitting }: ClientFormProps) 
     }
   }, []);
 
-  // Reemplaza handleSubmit por este:
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     try {
       localStorage.setItem(
         "tangible_client",
         JSON.stringify({ name, phone, savedAt: Date.now() })
       );
     } catch {
-      // Si localStorage falla (ej. modo privado), no bloqueamos el flujo
     }
     onSubmit(name, phone, websiteUrl);
   };
 
-  // Reemplaza handleReset por este:
   const handleReset = () => {
     localStorage.removeItem("tangible_client");
     setName("");
@@ -77,7 +75,6 @@ export default function ClientForm({ onSubmit, isSubmitting }: ClientFormProps) 
       {isReturningUser ? (
         <div className="text-center">
           <div className="w-16 h-16 bg-salon-yellow rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-salon-brown shadow-folk">
-            {/* Ícono de Usuario minimalista */}
             <svg className="w-8 h-8 text-salon-brown" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
@@ -88,19 +85,27 @@ export default function ClientForm({ onSubmit, isSubmitting }: ClientFormProps) 
           </p>
           
           <button
-            onClick={handleSubmit}
+            onClick={() => handleSubmit()} 
             disabled={isSubmitting}
             className="w-full bg-salon-brown text-salon-yellow py-4 px-6 rounded-xl font-bold text-sm uppercase tracking-widest shadow-folk mb-4 transform active:scale-[0.98] transition-all hand-drawn border-2 border-salon-brown hover:bg-salon-brown/90"
           >
             {isSubmitting ? 'AGENDANDO...' : 'CONFIRMAR CITA'}
-          </button>
-
+        </button>
           <button 
             onClick={handleReset}
             className="text-[10px] uppercase tracking-wider text-salon-gray underline hover:text-salon-olive font-bold"
           >
             No soy yo / Cambiar número
           </button>
+          <button 
+            onClick={() => {
+              onGoBack?.();
+            }}
+            className="text-[10px] uppercase tracking-wider text-salon-olive underline hover:text-salon-brown font-bold mt-2 block mx-auto"
+          >
+            Cambiar servicios o fecha
+          </button>
+
         </div>
       ) : (
         /* VISTA PARA CLIENTA NUEVA */
