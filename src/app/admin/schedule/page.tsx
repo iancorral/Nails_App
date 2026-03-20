@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
+import MuralDecorations from '@/components/layout/MuralDecorations';
 
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
@@ -21,6 +22,7 @@ type BlockedDate = {
 
 export default function SchedulePage() {
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(true);
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -34,6 +36,7 @@ export default function SchedulePage() {
     ]).then(([sched, blocked]) => {
       setSchedule(sched);
       setBlockedDates(blocked);
+      setLoadingSchedule(false);
     });
   }, []);
 
@@ -80,8 +83,9 @@ export default function SchedulePage() {
   };
 
   return (
-    <main className="min-h-screen p-6 md:p-10 bg-salon-bg">
-      <div className="max-w-2xl mx-auto">
+  <main className="min-h-screen p-6 md:p-10 bg-salon-bg relative">
+    <MuralDecorations />
+    <div className="max-w-2xl mx-auto relative z-10">
 
         {/* Header */}
         <header className="mb-8">
@@ -105,45 +109,49 @@ export default function SchedulePage() {
             Horario semanal
           </h2>
 
-          <div className="space-y-3">
-            {schedule.map((day) => (
-              <div key={day.dayOfWeek} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${day.isDayOff ? "bg-gray-50 border-gray-200 opacity-60" : "bg-salon-bg border-salon-olive/20"}`}>
-                {/* Toggle día libre */}
-                <button
-                  onClick={() => updateDay(day.dayOfWeek, "isDayOff", !day.isDayOff)}
-                  className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-xs font-black transition-all shrink-0 ${day.isDayOff ? "bg-gray-100 border-gray-300 text-gray-400" : "bg-salon-olive border-salon-olive text-white"}`}
-                >
-                  {day.isDayOff ? "✕" : "✓"}
-                </button>
-
-                {/* Nombre del día */}
-                <span className={`font-black uppercase tracking-wide text-sm w-24 shrink-0 ${day.isDayOff ? "text-gray-400" : "text-salon-brown"}`}>
-                  {DAYS[day.dayOfWeek]}
-                </span>
-
-                {/* Horarios */}
-                {!day.isDayOff ? (
-                  <div className="flex items-center gap-2 flex-1">
-                    <input
-                      type="time"
-                      value={day.startTime}
-                      onChange={(e) => updateDay(day.dayOfWeek, "startTime", e.target.value)}
-                      className="border-2 border-salon-olive/30 rounded-lg px-2 py-1 text-sm text-salon-brown font-bold focus:border-salon-olive outline-none bg-white"
-                    />
-                    <span className="text-salon-gray text-xs font-bold">a</span>
-                    <input
-                      type="time"
-                      value={day.endTime}
-                      onChange={(e) => updateDay(day.dayOfWeek, "endTime", e.target.value)}
-                      className="border-2 border-salon-olive/30 rounded-lg px-2 py-1 text-sm text-salon-brown font-bold focus:border-salon-olive outline-none bg-white"
-                    />
-                  </div>
-                ) : (
-                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Día libre</span>
-                )}
+            {loadingSchedule ? (
+              <div className="text-center py-8 text-salon-gray animate-pulse text-xs uppercase tracking-widest">
+                Cargando horario...
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="space-y-3">
+                {schedule.map((day) => (
+                  <div key={day.dayOfWeek} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${day.isDayOff ? "bg-gray-50 border-gray-200 opacity-60" : "bg-salon-bg border-salon-olive/20"}`}>
+                    {/* Toggle día libre */}
+                    <button
+                      onClick={() => updateDay(day.dayOfWeek, "isDayOff", !day.isDayOff)}
+                      className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-xs font-black transition-all shrink-0 ${day.isDayOff ? "bg-gray-100 border-gray-300 text-gray-400" : "bg-salon-olive border-salon-olive text-white"}`}
+                    >
+                      {day.isDayOff ? "✕" : "✓"}
+                    </button>
+
+                    <span className={`font-black uppercase tracking-wide text-sm w-24 shrink-0 ${day.isDayOff ? "text-gray-400" : "text-salon-brown"}`}>
+                      {DAYS[day.dayOfWeek]}
+                    </span>
+
+                    {!day.isDayOff ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          type="time"
+                          value={day.startTime}
+                          onChange={(e) => updateDay(day.dayOfWeek, "startTime", e.target.value)}
+                          className="border-2 border-salon-olive/30 rounded-lg px-2 py-1 text-sm text-salon-brown font-bold focus:border-salon-olive outline-none bg-white"
+                        />
+                        <span className="text-salon-gray text-xs font-bold">a</span>
+                        <input
+                          type="time"
+                          value={day.endTime}
+                          onChange={(e) => updateDay(day.dayOfWeek, "endTime", e.target.value)}
+                          className="border-2 border-salon-olive/30 rounded-lg px-2 py-1 text-sm text-salon-brown font-bold focus:border-salon-olive outline-none bg-white"
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Día libre</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
           <button
             onClick={saveSchedule}
@@ -167,7 +175,10 @@ export default function SchedulePage() {
               type="date"
               value={newBlockDate}
               onChange={(e) => setNewBlockDate(e.target.value)}
-              min={format(new Date(), "yyyy-MM-dd")}
+              min={(() => {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+              })()}
               className="border-2 border-salon-terracotta/30 rounded-lg px-3 py-2 text-sm text-salon-brown font-bold focus:border-salon-terracotta outline-none bg-white flex-1"
             />
             <input

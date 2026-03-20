@@ -83,6 +83,15 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
           <p className="text-xs text-salon-gray mb-6 font-medium">
             Usaremos el número <span className="font-bold text-salon-terracotta">...{phone.slice(-4)}</span>
           </p>
+
+          {/* Antes del botón CONFIRMAR RESERVA / CONFIRMAR CITA */}
+          <div className="bg-salon-yellow/20 border border-salon-yellow/50 rounded-xl px-4 py-3 mb-2">
+            <p className="text-[10px] text-salon-gray leading-relaxed text-center">
+              Se requiere depósito de{" "}
+              <span className="font-black text-salon-terracotta">$150 MXN</span>{" "}
+              al confirmar por WhatsApp. Cancelaciones con menos de 24h no son reembolsables.
+            </p>
+          </div>
           
           <button
             onClick={() => handleSubmit()} 
@@ -149,6 +158,16 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
               placeholder="Ej. 664 123 4567"
               className="w-full bg-white border-2 border-salon-gray/30 px-4 py-3 text-salon-brown focus:border-salon-lavender focus:ring-0 outline-none transition-all hand-drawn placeholder:text-salon-gray/40 font-medium"
             />
+          </div>
+
+          
+          {/* Antes del botón CONFIRMAR RESERVA / CONFIRMAR CITA */}
+          <div className="bg-salon-yellow/20 border border-salon-yellow/50 rounded-xl px-4 py-3 mb-2">
+            <p className="text-[10px] text-salon-gray leading-relaxed text-center">
+              Se requiere depósito de{" "}
+              <span className="font-black text-salon-terracotta">$150 MXN</span>{" "}
+              al confirmar por WhatsApp. Cancelaciones con menos de 24h no son reembolsables.
+            </p>
           </div>
 
           <div className="pt-2">

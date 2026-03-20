@@ -27,6 +27,7 @@ model Service {
   duration    Int      // Duración en minutos
   price       Float
   description String?
+  category    String   @default("General")
   isActive    Boolean  @default(true)
   
   // Relación Muchos a Muchos (Lado A)

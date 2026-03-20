@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { format, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import MetricsDashboard from '@/components/admin/MetricsDashboard';
+import MuralDecorations from '@/components/layout/MuralDecorations';
 
 type Service = { id: string; name: string; price: number; duration: number };
 type Appointment = { 
@@ -103,9 +104,7 @@ export default function AdminDashboard() {
         const data = await res.json();
         setReminders(data);
       }
-    } catch {
-      // silencioso
-    }
+    } catch {}
   };
 
   const handleCancelClick = (id: string, clientName: string) => {
@@ -127,9 +126,7 @@ export default function AdminDashboard() {
           app.id === id ? { ...app, status: 'CANCELLED' } : app
         ));
       }
-    } catch {
-      // silencioso
-    }
+    } catch {}
   };
 
   const markReminderSent = async (id: string) => {
@@ -153,11 +150,7 @@ export default function AdminDashboard() {
 
   return (
     <main className="min-h-screen p-6 md:p-10 relative bg-salon-bg">
-      <div className="fixed inset-0 pointer-events-none opacity-5">
-        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <path d="M0 0 L100 0 L100 100 L0 100 Z" fill="var(--color-salon-terracotta)"/>
-        </svg>
-      </div>
+      <MuralDecorations />
 
       {cancelModal && (
         <ConfirmModal
@@ -184,6 +177,14 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex gap-3">
+            <a
+              href="/admin/qr"
+              className="flex flex-col items-center bg-white px-6 py-3 border-2 border-salon-lavender shadow-folk hand-drawn hover:scale-105 transition-transform"
+            >
+              <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">QR</span>
+              <span className="text-2xl font-black text-salon-lavender">▣</span>
+            </a>
+
             <a
               href="/admin/schedule"
               className="flex flex-col items-center bg-white px-6 py-3 border-2 border-salon-terracotta shadow-folk hand-drawn hover:scale-105 transition-transform"
@@ -367,6 +368,7 @@ export default function AdminDashboard() {
                     <div className="px-4 py-3 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg text-xs font-bold uppercase tracking-wider text-center">
                       Cancelada
                     </div>
+                  
                   )}
                 </div>
               </div>

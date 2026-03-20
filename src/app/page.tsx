@@ -4,9 +4,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Service } from '@/types';
-// Asegúrate de que este componente exista en tu carpeta layout
 import MuralDecorations from '@/components/layout/MuralDecorations';
-import ServiceCard from '@/components/bookings/ServiceCard';
+import { CategoryAccordion } from '@/components/bookings/ServiceCard';
 import BookingCalendar from '@/components/bookings/BookingCalendar';
 import ClientForm from '@/components/bookings/ClientForm';
 
@@ -166,32 +165,24 @@ export default function Home() {
               1. Elige tu arte
             </h2>
             {selectedServices.length > 0 && (
-               <span className="text-xs font-black text-white bg-salon-lavender px-3 py-1 rounded-full shadow-sm animate-pulse border-2 border-white">
-                 {selectedServices.length}
-               </span>
+              <span className="text-xs font-black text-white bg-salon-lavender px-3 py-1 rounded-full shadow-sm animate-pulse border-2 border-white">
+                {selectedServices.length}
+              </span>
             )}
           </div>
-          
-          {loading ? <div className="text-center py-10 animate-pulse text-salon-gray font-medium">Cargando menú...</div> : (
-            <div className="space-y-6"> {/* Más espacio para que respire */}
-              {services.map((service) => (
-                <div key={service.id} className={`${selectedServices.some(s => s.id === service.id) ? 'transform scale-[1.02]' : ''} transition-all duration-300`}>
-                    {/* ENVOLTURA PARA ESTILO ALEBRIJE */}
-                    <div className={`
-                        p-1 transition-all duration-300 bg-white
-                        hand-drawn
-                        ${selectedServices.some(s => s.id === service.id) 
-                          ? 'shadow-folk-purple border-2 border-salon-lavender' /* Seleccionada */
-                          : 'shadow-folk border-2 border-salon-olive/50 hover:border-salon-olive' /* Normal */
-                        }
-                    `}>
-                        <ServiceCard 
-                          service={service}
-                          onSelect={() => toggleService(service)}
-                          isSelected={selectedServices.some(s => s.id === service.id)}
-                        />
-                    </div>
-                </div>
+
+          {loading ? (
+            <div className="text-center py-10 animate-pulse text-salon-gray font-medium">Cargando menú...</div>
+          ) : (
+            <div className="space-y-3">
+              {Array.from(new Set(services.map(s => s.category ?? 'General'))).map(category => (
+                <CategoryAccordion
+                  key={category}
+                  category={category}
+                  services={services.filter(s => (s.category ?? 'General') === category)}
+                  selectedServices={selectedServices}
+                  onSelect={toggleService}
+                />
               ))}
             </div>
           )}
