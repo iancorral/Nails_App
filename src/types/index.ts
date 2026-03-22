@@ -5,8 +5,9 @@
 export interface Service {
   id: string;
   name: string;
-  duration: number; // in minutes
+  duration: number;
   price: number;
-  description?: string; // Optional (?)
+  description?: string;
+  category?: string;
   isActive: boolean;
 }
