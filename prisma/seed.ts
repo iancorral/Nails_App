@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Seeding servicios...')
+  console.log('Seeding servicios...')
 
   await prisma.appointment.deleteMany()
   await prisma.service.deleteMany()
@@ -43,7 +43,7 @@ async function main() {
     ]
   })
 
-  console.log('✅ Servicios creados.')
+  console.log('Servicios creados.')
 }
 
 main()
