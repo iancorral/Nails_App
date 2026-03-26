@@ -1,17 +1,16 @@
-/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Paleta TANGIBLE (Mismos colores, diferente uso) */
-  --color-salon-bg: #FDFCF8;       
-  --color-salon-brown: #4A3B2A;    
-  --color-salon-lavender: #E38CCD; 
-  --color-salon-yellow: #FCEE89;   
-  --color-salon-olive: #8F9E58;    
-  --color-salon-terracotta: #D6705A; 
-  --color-salon-gray: #9A948B;
+  --color-salon-bg: #FAF7F2;
+  --color-salon-brown: #2C1F0E;
+  --color-salon-black: #1a1a1a;
+  --color-salon-lavender: #D4609C;
+  --color-salon-yellow: #F9E040;
+  --color-salon-olive: #6B8A2A;
+  --color-salon-terracotta: #C4522A;
+  --color-salon-gray: #7A746C;
 }
 
 body {
@@ -21,14 +20,12 @@ body {
   position: relative;
 }
 
-/* --- TEXTURA DE PAPEL / PARED --- */
-/* En lugar de patrones, usamos "ruido" para que no se vea plano */
 body::before {
   content: "";
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
   z-index: -2;
-  opacity: 0.05; /* Muy sutil, solo textura */
+  opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   pointer-events: none;
 }
@@ -37,7 +34,7 @@ body::before {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Bordes Orgánicos (Más sutiles ahora) */
+  /* Para elementos pequeños — mantiene el borde orgánico */
   .hand-drawn {
     border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -47,16 +44,24 @@ body::before {
     transform: scale(1.01);
   }
 
-  /* Sombra suave y difusa (Menos "caricatura", más elegante) */
+  /* Para cards grandes — bordes limpios con animación suave */
+  .card-hover {
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -8px rgba(0,0,0,0.12);
+  }
+
   .shadow-folk { 
-    box-shadow: 0 10px 15px -3px rgba(143, 158, 88, 0.2), 0 4px 6px -2px rgba(143, 158, 88, 0.1); 
+    box-shadow: 0 10px 15px -3px rgba(107, 138, 42, 0.25), 0 4px 6px -2px rgba(107, 138, 42, 0.12); 
   }
   .shadow-folk-purple { 
-    box-shadow: 0 10px 15px -3px rgba(227, 140, 205, 0.2), 0 4px 6px -2px rgba(227, 140, 205, 0.1); 
+    box-shadow: 0 10px 15px -3px rgba(212, 96, 156, 0.25), 0 4px 6px -2px rgba(212, 96, 156, 0.12); 
   }
 }
 
-/* Animaciones ultra-lentas para el fondo */
 .float-ambient { animation: floatAmbient 20s infinite alternate ease-in-out; }
 @keyframes floatAmbient {
   0% { transform: translate(0, 0) rotate(0deg); }

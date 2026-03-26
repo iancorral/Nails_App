@@ -94,10 +94,10 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
           </div>
           
           <button
-            onClick={() => handleSubmit()} 
-            disabled={isSubmitting}
-            className="w-full bg-salon-brown text-salon-yellow py-4 px-6 rounded-xl font-bold text-sm uppercase tracking-widest shadow-folk mb-4 transform active:scale-[0.98] transition-all hand-drawn border-2 border-salon-brown hover:bg-salon-brown/90"
-          >
+          onClick={() => handleSubmit()} 
+          disabled={isSubmitting}
+          className="w-full bg-salon-olive text-salon-white py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-folk mb-4 transform active:scale-[0.98] transition-all border-2 border-salon-olive hover:bg-salon-black/90"
+        >
             {isSubmitting ? 'AGENDANDO...' : 'CONFIRMAR CITA'}
         </button>
           <button 
@@ -174,7 +174,7 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full mt-2 bg-salon-brown text-salon-yellow py-4 px-6 rounded-xl font-bold text-sm uppercase tracking-widest shadow-folk transform active:scale-[0.98] transition-all disabled:opacity-50 hand-drawn border-2 border-salon-brown hover:bg-salon-brown/90"
+              className="w-full bg-salon-olive text-salon-white py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-folk mb-4 transform active:scale-[0.98] transition-all border-2 border-salon-olive hover:bg-salon-black/90"
             >
               {isSubmitting ? 'AGENDANDO...' : 'CONFIRMAR RESERVA'}
             </button>

@@ -9,13 +9,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'salon-bg': '#FDFCF8',       
-        'salon-brown': '#3E311D',    
-        'salon-lavender': '#E8A3D8', 
-        'salon-yellow': '#FBEF97',   
-        'salon-olive': '#96A053',    
-        'salon-terracotta': '#C87966', 
-        'salon-gray': '#9A948B',
+        'salon-bg': '#FAF7F2',
+        'salon-brown': '#2C1F0E',      // más oscuro, casi negro cálido
+        'salon-black': '#1a1a1a',      // negro puro para botones
+        'salon-lavender': '#D4609C',   // más saturado
+        'salon-yellow': '#F9E040',     // más saturado
+        'salon-olive': '#6B7135',      // más saturado
+        'salon-terracotta': '#C4522A', // más saturado
+        'salon-gray': '#7A746C',       // más definido
+        'salon-pink' : '#C4789A',
+        'salon-white' : '#FFFFFF'
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

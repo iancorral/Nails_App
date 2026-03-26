@@ -1,3 +1,4 @@
+// src/components/bookings/ServiceCard.tsx
 "use client";
 
 import { useState } from "react";
@@ -62,7 +63,8 @@ export function CategoryAccordion({ category, services, selectedServices, onSele
   const selectedCount = services.filter(s => selectedServices.some(sel => sel.id === s.id)).length;
 
   return (
-    <div className={`border-2 ${colors.border} rounded-2xl overflow-hidden hand-drawn transition-all duration-300 bg-white shadow-folk`}>
+    <div className={`border-2 ${colors.border} rounded-2xl overflow-hidden transition-all duration-300 bg-white shadow-folk`}>
+      {/* Se eliminó 'hand-drawn' de la envoltura exterior */}
       
       {/* Header del acordeón */}
       <button
@@ -95,13 +97,19 @@ export function CategoryAccordion({ category, services, selectedServices, onSele
 
       {/* Servicios del acordeón */}
       {open && (
-        <div className="divide-y divide-salon-gray/10">
+        <div className="p-3 space-y-3 bg-salon-bg/30">
           {services.map((service) => {
             const isSelected = selectedServices.some(s => s.id === service.id);
             return (
               <div
                 key={service.id}
-                className={`transition-all duration-200 ${isSelected ? `${colors.bg} border-l-4 ${colors.border}` : 'bg-white hover:bg-salon-bg'}`}
+                className={`
+                  p-1 transition-all duration-300 bg-white card-hover border-2 rounded-xl
+                  ${isSelected 
+                    ? 'shadow-folk-purple border-salon-lavender' 
+                    : 'shadow-folk border-salon-olive/50 hover:border-salon-olive'
+                  }
+                `}
               >
                 <ServiceCardItem
                   service={service}
