@@ -80,7 +80,7 @@ export default function Home() {
     const dateStr = bookingDate.date.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
     const timeStr = bookingDate.time;
     const servicesStr = selectedServices.map(s => s.name).join(', ');
-    const salonPhone = "526144602066"; 
+    const salonPhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER; 
 
     // CORRECCIÓN AQUÍ: Usamos etiquetas de texto puro (FECHA:, SERVICIOS:) en lugar de emojis.
     // Esto evita los signos de interrogación y se ve más elegante.
@@ -93,16 +93,16 @@ export default function Home() {
         {/* Decoración de fondo */}
         <MuralDecorations />
         
-        {/* Tarjeta de Confirmación Estilo Alebrije */}
-        <div className="z-10 bg-white/90 backdrop-blur-sm p-8 rounded-3xl border-2 border-salon-olive shadow-folk max-w-sm hand-drawn animate-in fade-in zoom-in">
+{/* Tarjeta de Confirmación */}
+        <div className="z-10 bg-white/90 backdrop-blur-sm p-8 rounded-2xl border-2 border-salon-black shadow-folk max-w-sm animate-in fade-in zoom-in">
             {/* Ícono Vectorial (Estrella) */}
-            <div className="w-20 h-20 bg-salon-yellow rounded-full flex items-center justify-center mb-4 mx-auto border-2 border-salon-brown">
-              <svg className="w-10 h-10 text-salon-brown" fill="currentColor" viewBox="0 0 24 24">
+            <div className="w-20 h-20 bg-salon-yellow rounded-full flex items-center justify-center mb-4 mx-auto border-2 border-salon-black">
+              <svg className="w-10 h-10 text-salon-black" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
               </svg>
             </div>
             
-            <h1 className="text-2xl font-black text-salon-brown mb-2 uppercase tracking-wider">¡Cita Apartada!</h1>
+            <h1 className="text-2xl font-black text-salon-black mb-2 uppercase tracking-wider">¡Cita Apartada!</h1>
             <p className="text-salon-gray mb-6 text-xs font-bold uppercase tracking-widest leading-relaxed">
               Para finalizar, es necesario enviar el mensaje de confirmación.
             </p>
@@ -111,14 +111,16 @@ export default function Home() {
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#25D366] text-white px-6 py-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-3 hover:bg-[#20bd5a] transition-all transform hover:scale-105 hand-drawn border-2 border-transparent"
+              className="bg-[#25D366] text-white px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-[#20bd5a] transition-all transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              {/* Logo de WhatsApp Vectorial */}
-              <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-8.68-2.031-.967-.272-.297-.471-.446-.917-.446-.446 0-.967.174-1.488.744-.521.57-1.984 1.933-1.984 4.71s2.032 4.164 2.305 4.536c.273.371 3.967 6.059 9.61 8.463 3.939 1.678 4.735 1.344 5.578 1.268.843-.075 1.835-.744 2.096-1.463.261-.718.261-1.338.186-1.462z"/></svg>
+              {/* Logo de WhatsApp Oficial (Corregido) */}
+              <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.347-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+              </svg>
               <span>CONFIRMAR EN WHATSAPP</span>
             </a>
             
-            <button onClick={() => window.location.reload()} className="text-[10px] uppercase tracking-wider text-salon-gray underline mt-6 block mx-auto font-bold hover:text-salon-brown">
+            <button onClick={() => window.location.reload()} className="text-[10px] uppercase tracking-wider text-salon-gray underline mt-6 block mx-auto font-bold hover:text-salon-black">
               Volver al inicio
             </button>
         </div>
@@ -191,7 +193,7 @@ export default function Home() {
         {/* PASO 2: CALENDARIO */}
         {selectedServices.length > 0 && (
           <section className={`mt-10 relative z-10 ${showClientForm ? 'opacity-50 pointer-events-none' : 'animate-in fade-in'}`}>
-            <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl border-2 border-salon-olive/30 hand-drawn shadow-sm">
+            <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl border-2 border-salon-olive/30 shadow-folk">
                 <h2 className="text-xs font-black text-salon-olive uppercase tracking-[0.1em] mb-5">
                   2. Tu espacio
                 </h2>
@@ -212,7 +214,7 @@ export default function Home() {
         {/* PASO 3: FORMULARIO */}
         {selectedServices.length > 0 && bookingDate && showClientForm && (
            <section className="mt-8 animate-in fade-in slide-in-from-bottom-4 relative z-20">
-             <div className="hand-drawn bg-white shadow-folk border-2 border-salon-brown overflow-hidden">
+             <div className="bg-white shadow-folk border-2 border-salon-brown overflow-hidden rounded-2xl">
                 <ClientForm 
                   onSubmit={handleFinalBooking} 
                   isSubmitting={isSubmitting}
@@ -227,7 +229,7 @@ export default function Home() {
 
         <div className="h-48 w-full"></div>
 
-        {/* BARRA FLOTANTE */}
+ {/* BARRA FLOTANTE */}
         {selectedServices.length > 0 && !showClientForm && (
           <div className="fixed bottom-4 left-0 w-full z-50 px-4">
             <div className="max-w-md mx-auto">
@@ -238,9 +240,9 @@ export default function Home() {
                    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
                 }}
                 className={`
-                  w-full py-4 px-6 flex justify-between items-center transition-all duration-300 hand-drawn shadow-folk border-2 border-salon-brown
+                  w-full py-4 px-6 flex justify-between items-center transition-all duration-300 shadow-folk border-2 border-salon-olive rounded-2xl
                   ${bookingDate 
-                    ? 'bg-salon-brown text-salon-yellow hover:scale-[1.02] active:scale-[0.98]' 
+                    ? 'bg-salon-olive text-salon-white hover:scale-[1.02] active:scale-[0.98]' 
                     : 'bg-white text-salon-gray border-salon-gray/30 cursor-not-allowed opacity-90'
                   }
                 `}

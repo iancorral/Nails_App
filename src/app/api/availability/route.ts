@@ -73,10 +73,10 @@ export async function GET(req: Request) {
     const availableSlots: string[] = [];
     let currentSlot = new Date(workStart);
 
-    while (isBefore(currentSlot, workEnd)) {
+    while (currentSlot.getTime() <= workEnd.getTime()) {
       const potentialEnd = addMinutes(currentSlot, duration);
 
-      if (potentialEnd.getTime() <= workEnd.getTime()) {
+      if (currentSlot.getTime() <= workEnd.getTime()) {
         if (isToday) {
           const thirtyMinFromNow = addMinutes(now, 30);
           if (isBefore(currentSlot, thirtyMinFromNow)) {

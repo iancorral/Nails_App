@@ -65,7 +65,7 @@ export default function BookingCalendar({ onDateTimeSelect, totalDuration }: Boo
                   /* APLICAMOS CLASE HAND-DRAWN (Bordes orgánicos) */
                   hand-drawn
                   ${isSelected 
-                    ? 'bg-salon-brown border-salon-brown text-salon-yellow shadow-folk-purple transform scale-105' 
+                    ? 'bg-salon-brown border-salon-brown text-salon-white shadow-folk-purple transform scale-105' 
                     : 'bg-white border-salon-gray/20 text-salon-brown hover:border-salon-olive'
                   }
                 `}
