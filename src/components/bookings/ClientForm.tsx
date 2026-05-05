@@ -89,7 +89,7 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
             <p className="text-[10px] text-salon-gray leading-relaxed text-center">
               Se requiere depósito de{" "}
               <span className="font-black text-salon-terracotta">$150 MXN</span>{" "}
-              al confirmar por WhatsApp. Cancelaciones con menos de 24h no son reembolsables.
+              al confirmar por WhatsApp. Los precios mostrados son base, el costo final puede variar según la complejidad del diseño.
             </p>
           </div>
           
@@ -166,7 +166,7 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
             <p className="text-[10px] text-salon-gray leading-relaxed text-center">
               Se requiere depósito de{" "}
               <span className="font-black text-salon-terracotta">$150 MXN</span>{" "}
-              al confirmar por WhatsApp. Cancelaciones con menos de 24h no son reembolsables.
+              al confirmar por WhatsApp. Los precios mostrados son base, el costo final puede variar según la complejidad del diseño.
             </p>
           </div>
 
