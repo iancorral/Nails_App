@@ -76,4 +76,6 @@ npm run dev
 - Environment variables for all sensitive data.
 
 ## License
-MIT
+Copyright (c) 2026 Ian Corral. All rights reserved.
+
+This project is not open source. The source code is published for portfolio demonstration purposes only. No permission is granted to copy, distribute, modify, or use this code for any commercial or personal purpose without explicit authorization.
