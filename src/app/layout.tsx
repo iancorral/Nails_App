@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "TANGIBLE | Nails & Art Studio",
   description: "Reserva tu experiencia de uñas y diseño en Tangible.",
+  icons: {
+    icon: '/logo-tangible.png',
+  },
 };
 
 export default function RootLayout({

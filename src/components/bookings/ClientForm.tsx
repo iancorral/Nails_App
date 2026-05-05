@@ -16,7 +16,6 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
   
   const [isReturningUser, setIsReturningUser] = useState(false);
 
-  // Reemplaza el useEffect actual por este:
   useEffect(() => {
     try {
       const raw = localStorage.getItem("tangible_client");
@@ -24,16 +23,13 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
 
       const parsed = JSON.parse(raw);
 
-      // Expirar después de 90 días
       const ninetyDays = 90 * 24 * 60 * 60 * 1000;
       if (Date.now() - parsed.savedAt > ninetyDays) {
         localStorage.removeItem("tangible_client");
         return;
       }
 
-      // Sanitizar al leer — solo letras, espacios y acentos
       const safeName = parsed.name?.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, "").trim();
-      // Solo dígitos y + para el teléfono
       const safePhone = parsed.phone?.replace(/[^0-9+]/g, "").trim();
 
       if (safeName && safePhone) {
@@ -96,7 +92,7 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
           <button
           onClick={() => handleSubmit()} 
           disabled={isSubmitting}
-          className="w-full bg-salon-olive text-salon-white py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-folk mb-4 transform active:scale-[0.98] transition-all border-2 border-salon-olive hover:bg-salon-black/90"
+          className="w-full bg-salon-olive text-salon-white py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-folk mb-4 transform active:scale-[0.98] transition-all border-2 border-salon-olive hover:bg-salon-olive/90"
         >
             {isSubmitting ? 'AGENDANDO...' : 'CONFIRMAR CITA'}
         </button>
@@ -141,7 +137,6 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej. María Pérez"
-              /* INPUT CON ESTILO HAND-DRAWN */
               className="w-full bg-white border-2 border-salon-gray/30 px-4 py-3 text-salon-brown focus:border-salon-lavender focus:ring-0 outline-none transition-all hand-drawn placeholder:text-salon-gray/40 font-medium"
             />
           </div>
@@ -174,7 +169,7 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-salon-olive text-salon-white py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-folk mb-4 transform active:scale-[0.98] transition-all border-2 border-salon-olive hover:bg-salon-black/90"
+              className="w-full bg-salon-olive text-salon-white py-4 px-6 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-folk mb-4 transform active:scale-[0.98] transition-all border-2 border-salon-olive hover:bg-salon-olive/90"
             >
               {isSubmitting ? 'AGENDANDO...' : 'CONFIRMAR RESERVA'}
             </button>

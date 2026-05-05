@@ -42,10 +42,8 @@ export async function GET(req: Request) {
       where: { dayOfWeek },
     });
 
-    // Si es día libre o no hay horario configurado para ese día, retornar vacío
     if (schedule?.isDayOff) return NextResponse.json([]);
 
-    // Usar horario de la DB o fallback a 10:00-19:00
     const [startH, startM] = (schedule?.startTime ?? "10:00").split(":").map(Number);
     const [endH, endM] = (schedule?.endTime ?? "19:00").split(":").map(Number);
 

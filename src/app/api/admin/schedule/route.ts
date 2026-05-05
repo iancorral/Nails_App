@@ -28,7 +28,7 @@ export async function GET() {
         dayOfWeek: day,
         startTime: "10:00",
         endTime: "19:00",
-        isDayOff: day === 0, // domingo off por default
+        isDayOff: day === 0, 
       }))
     );
   }

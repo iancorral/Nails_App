@@ -1,4 +1,3 @@
-// src/components/bookings/ServiceCard.tsx
 "use client";
 
 import { useState } from "react";
@@ -64,9 +63,7 @@ export function CategoryAccordion({ category, services, selectedServices, onSele
 
   return (
     <div className={`border-2 ${colors.border} rounded-2xl overflow-hidden transition-all duration-300 bg-white shadow-folk`}>
-      {/* Se eliminó 'hand-drawn' de la envoltura exterior */}
-      
-      {/* Header del acordeón */}
+
       <button
         onClick={() => setOpen(!open)}
         className={`w-full flex items-center justify-between px-5 py-4 ${open ? colors.bg : 'bg-white'} transition-all`}
@@ -125,7 +122,6 @@ export function CategoryAccordion({ category, services, selectedServices, onSele
   );
 }
 
-// Export default para compatibilidad con código existente
 export default function ServiceCard({ service, onSelect, isSelected }: ServiceCardProps) {
   return <ServiceCardItem service={service} onSelect={onSelect} isSelected={isSelected} />;
 }

@@ -34,7 +34,6 @@ body::before {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Para elementos pequeños — mantiene el borde orgánico */
   .hand-drawn {
     border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -44,7 +43,6 @@ body::before {
     transform: scale(1.01);
   }
 
-  /* Para cards grandes — bordes limpios con animación suave */
   .card-hover {
     border-radius: 16px;
     transition: all 0.3s ease;

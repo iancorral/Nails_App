@@ -45,7 +45,7 @@ export async function GET(req: Request) {
     };
   });
 
-  // Borrar recordatorios anteriores del mismo día y guardar los nuevos
+
   await prisma.reminder.deleteMany({
     where: { scheduledFor: { gte: start, lte: end } },
   });

@@ -1,6 +1,5 @@
-// src/app/api/services/route.ts
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma'; // <--- IMPORTANTE: Importamos desde tu archivo lib
+import { prisma } from '@/lib/prisma'; 
 
 export async function GET() {
   try {

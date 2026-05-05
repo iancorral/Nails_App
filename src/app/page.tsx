@@ -226,6 +226,11 @@ export default function Home() {
              </div>
            </section>
         )}
+        <footer className="text-center py-6 mt-4">
+          <p className="text-[10px] text-salon-gray/50 uppercase tracking-widest font-bold">
+            © Tangible Nails & Art Studio
+          </p>
+        </footer>
 
         <div className="h-48 w-full"></div>
 
