@@ -1,27 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
 
-// Solo permitimos cambiar a estos estados válidos
 const patchSchema = z.object({
   status: z.enum(["CONFIRMED", "CANCELLED"]),
 });
 
 export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await context.params;
-
-  // Solo el admin puede modificar citas
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  // Validar ObjectId
+  const { id } = await params;
+
   if (!id || !/^[a-f\d]{24}$/i.test(id)) {
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
