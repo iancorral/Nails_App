@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -10,17 +10,19 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-  //  Solo el admin puede modificar citas
+  const { id } = await context.params;
+
+  // Solo el admin puede modificar citas
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  // Validar que el ID tenga formato de ObjectId de MongoDB
-  if (!params.id || !/^[a-f\d]{24}$/i.test(params.id)) {
+  // Validar ObjectId
+  if (!id || !/^[a-f\d]{24}$/i.test(id)) {
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
 
@@ -33,7 +35,7 @@ export async function PATCH(
     }
 
     const updatedAppointment = await prisma.appointment.update({
-      where: { id: params.id },
+      where: { id },
       data: { status: validation.data.status },
     });
 
