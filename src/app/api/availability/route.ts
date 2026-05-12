@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { addMinutes, format, isBefore } from "date-fns";
 import { z } from "zod";
+
 export const dynamic = 'force-dynamic';
 
 const availabilitySchema = z.object({
@@ -27,10 +28,15 @@ export async function GET(req: Request) {
   const [year, month, day] = date.split("-").map(Number);
   const dayOfWeek = new Date(year, month - 1, day).getDay();
 
+  // Chihuahua es UTC-6 en verano (CDT), UTC-7 en invierno (CST)
+  // Ahorita estamos en verano
+  const utcOffsetHours = 6;
+
   try {
-    // 1. Verificar si el día está bloqueado explícitamente
-    const dayStart = new Date(year, month - 1, day, 0, 0, 0);
-    const dayEnd = new Date(year, month - 1, day, 23, 59, 59);
+    // 1. Verificar si el día está bloqueado
+    // dayStart y dayEnd en UTC cubriendo el día completo de Chihuahua
+    const dayStart = new Date(Date.UTC(year, month - 1, day, utcOffsetHours, 0, 0));
+    const dayEnd = new Date(Date.UTC(year, month - 1, day + 1, utcOffsetHours, 0, 0));
 
     const blockedDate = await prisma.blockedDate.findFirst({
       where: { date: { gte: dayStart, lte: dayEnd } },
@@ -48,18 +54,18 @@ export async function GET(req: Request) {
     const [startH, startM] = (schedule?.startTime ?? "10:00").split(":").map(Number);
     const [endH, endM] = (schedule?.endTime ?? "19:00").split(":").map(Number);
 
-    const workStart = new Date(year, month - 1, day, startH, startM, 0);
-    const workEnd = new Date(year, month - 1, day, endH, endM, 0);
+    // Construir workStart y workEnd en UTC equivalente a hora Chihuahua
+    const workStart = new Date(Date.UTC(year, month - 1, day, startH + utcOffsetHours, startM, 0));
+    const workEnd = new Date(Date.UTC(year, month - 1, day, endH + utcOffsetHours, endM, 0));
 
     // 3. Filtrar horarios pasados si es hoy
     const now = new Date();
-    const chihuahuaOffset = -6 * 60;
-    const chihuahuaNow = new Date(now.getTime() + (chihuahuaOffset - (-now.getTimezoneOffset())) * 60000);
+    const chihuahuaNow = new Date(now.getTime() - utcOffsetHours * 60 * 60 * 1000);
 
     const isToday =
-      chihuahuaNow.getFullYear() === year &&
-      chihuahuaNow.getMonth() === month - 1 &&
-      chihuahuaNow.getDate() === day;
+      chihuahuaNow.getUTCFullYear() === year &&
+      chihuahuaNow.getUTCMonth() === month - 1 &&
+      chihuahuaNow.getUTCDate() === day;
 
     // 4. Traer citas confirmadas del día
     const appointments = await prisma.appointment.findMany({
@@ -78,27 +84,27 @@ export async function GET(req: Request) {
     while (currentSlot.getTime() <= workEnd.getTime()) {
       const potentialEnd = addMinutes(currentSlot, duration);
 
-      if (currentSlot.getTime() <= workEnd.getTime()) {
-        if (isToday) {
-          const thirtyMinFromNow = addMinutes(chihuahuaNow, 30);
-          if (isBefore(currentSlot, thirtyMinFromNow)) {
-            currentSlot = addMinutes(currentSlot, 30);
-            continue;
-          }
+      if (isToday) {
+        const thirtyMinFromNow = addMinutes(now, 30);
+        if (isBefore(currentSlot, thirtyMinFromNow)) {
+          currentSlot = addMinutes(currentSlot, 30);
+          continue;
         }
+      }
 
-        const isCollision = appointments.some((app) => {
-          const appStart = new Date(app.date);
-          const appEnd = new Date(app.endDate);
-          return (
-            currentSlot.getTime() < appEnd.getTime() &&
-            potentialEnd.getTime() > appStart.getTime()
-          );
-        });
+      const isCollision = appointments.some((app) => {
+        const appStart = new Date(app.date);
+        const appEnd = new Date(app.endDate);
+        return (
+          currentSlot.getTime() < appEnd.getTime() &&
+          potentialEnd.getTime() > appStart.getTime()
+        );
+      });
 
-        if (!isCollision) {
-          availableSlots.push(format(currentSlot, "HH:mm"));
-        }
+      if (!isCollision) {
+        // Formatear el slot en hora Chihuahua para mostrar al usuario
+        const slotInChihuahua = new Date(currentSlot.getTime() - utcOffsetHours * 60 * 60 * 1000);
+        availableSlots.push(format(slotInChihuahua, "HH:mm"));
       }
 
       currentSlot = addMinutes(currentSlot, 30);
