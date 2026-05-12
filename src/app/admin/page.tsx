@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { format, isPast } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import MetricsDashboard from '@/components/admin/MetricsDashboard';
 import MuralDecorations from '@/components/layout/MuralDecorations';
@@ -142,11 +142,12 @@ export default function AdminDashboard() {
 
   const filteredAppointments = appointments.filter(app => {
     const appDate = new Date(app.endDate);
-    const isFinished = isPast(appDate);
+    const now = new Date();
+    const isFinished = appDate < now;
     const isCancelled = app.status === 'CANCELLED';
     if (filter === 'UPCOMING') return !isFinished && !isCancelled;
     return isFinished || isCancelled;
-  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <main className="min-h-screen p-6 md:p-10 relative bg-salon-bg">

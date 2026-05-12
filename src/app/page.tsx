@@ -1,4 +1,3 @@
-// src/app/page.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -44,13 +43,20 @@ export default function Home() {
     setShowClientForm(false);
   };
 
-  const handleFinalBooking = async (clientName: string, clientPhone: string, websiteUrl?: string) => {
+    const handleFinalBooking = async (clientName: string, clientPhone: string, websiteUrl?: string) => {
     if (selectedServices.length === 0 || !bookingDate) return;
     setIsSubmitting(true);
 
-    const [hours, minutes] = bookingDate.time.split(':');
-    const finalDate = new Date(bookingDate.date);
-    finalDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    const [hours, minutes] = bookingDate.time.split(':').map(Number);
+    const finalDate = new Date(
+      bookingDate.date.getFullYear(),
+      bookingDate.date.getMonth(),
+      bookingDate.date.getDate(),
+      hours,
+      minutes,
+      0,
+      0
+    );
 
     try {
       const response = await fetch('/api/bookings', {
@@ -58,7 +64,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           serviceIds: selectedServices.map(s => s.id),
-          date: finalDate,
+          date: finalDate.toISOString(),
           clientName,
           clientPhone,
           website_url: websiteUrl || "" 

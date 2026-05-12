@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { addMinutes, format, isBefore } from "date-fns";
 import { z } from "zod";
+export const dynamic = 'force-dynamic';
 
 const availabilitySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -52,10 +53,13 @@ export async function GET(req: Request) {
 
     // 3. Filtrar horarios pasados si es hoy
     const now = new Date();
+    const chihuahuaOffset = -6 * 60;
+    const chihuahuaNow = new Date(now.getTime() + (chihuahuaOffset - (-now.getTimezoneOffset())) * 60000);
+
     const isToday =
-      now.getFullYear() === year &&
-      now.getMonth() === month - 1 &&
-      now.getDate() === day;
+      chihuahuaNow.getFullYear() === year &&
+      chihuahuaNow.getMonth() === month - 1 &&
+      chihuahuaNow.getDate() === day;
 
     // 4. Traer citas confirmadas del día
     const appointments = await prisma.appointment.findMany({
@@ -76,7 +80,7 @@ export async function GET(req: Request) {
 
       if (currentSlot.getTime() <= workEnd.getTime()) {
         if (isToday) {
-          const thirtyMinFromNow = addMinutes(now, 30);
+          const thirtyMinFromNow = addMinutes(chihuahuaNow, 30);
           if (isBefore(currentSlot, thirtyMinFromNow)) {
             currentSlot = addMinutes(currentSlot, 30);
             continue;
