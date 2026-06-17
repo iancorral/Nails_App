@@ -20,6 +20,20 @@ type BlockedDate = {
   reason?: string;
 };
 
+type AvailabilityOverride = {
+  id: string;
+  date: string;
+  isClosed: boolean;
+  startTime: string | null;
+  endTime: string | null;
+  note: string | null;
+};
+
+function parseDateLabel(dateStr: string) {
+  // dateStr is "YYYY-MM-DD"; parse at noon to avoid timezone shifts in display
+  return format(new Date(dateStr + "T12:00:00"), "EEEE d 'de' MMMM", { locale: es });
+}
+
 export default function SchedulePage() {
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(true);
@@ -30,6 +44,15 @@ export default function SchedulePage() {
   const [newBlockReason, setNewBlockReason] = useState("");
   const [minDate, setMinDate] = useState("");
 
+  // Override state
+  const [overrides, setOverrides] = useState<AvailabilityOverride[]>([]);
+  const [newOverrideDate, setNewOverrideDate] = useState("");
+  const [newOverrideClosed, setNewOverrideClosed] = useState(false);
+  const [newOverrideStart, setNewOverrideStart] = useState("10:00");
+  const [newOverrideEnd, setNewOverrideEnd] = useState("19:00");
+  const [newOverrideNote, setNewOverrideNote] = useState("");
+  const [savingOverride, setSavingOverride] = useState(false);
+
   useEffect(() => {
     const d = new Date();
     setMinDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
@@ -37,9 +60,11 @@ export default function SchedulePage() {
     Promise.all([
       fetch("/api/admin/schedule").then((r) => r.json()),
       fetch("/api/admin/blocked-dates").then((r) => r.json()),
-    ]).then(([sched, blocked]) => {
+      fetch("/api/admin/availability-overrides").then((r) => r.json()),
+    ]).then(([sched, blocked, ovr]) => {
       setSchedule(sched);
       setBlockedDates(blocked);
+      setOverrides(ovr);
       setLoadingSchedule(false);
     });
   }, []);
@@ -86,6 +111,51 @@ export default function SchedulePage() {
     setBlockedDates((prev) => prev.filter((d) => d.id !== id));
   };
 
+  const addOverride = async () => {
+    if (!newOverrideDate) return;
+    if (!newOverrideClosed && (!newOverrideStart || !newOverrideEnd)) return;
+    setSavingOverride(true);
+    const res = await fetch("/api/admin/availability-overrides", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: newOverrideDate,
+        isClosed: newOverrideClosed,
+        startTime: newOverrideClosed ? undefined : newOverrideStart,
+        endTime: newOverrideClosed ? undefined : newOverrideEnd,
+        note: newOverrideNote || undefined,
+      }),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      setOverrides((prev) => {
+        // upsert: replace if same date exists
+        const idx = prev.findIndex((o) => o.date === created.date);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = created;
+          return next.sort((a, b) => a.date.localeCompare(b.date));
+        }
+        return [...prev, created].sort((a, b) => a.date.localeCompare(b.date));
+      });
+      setNewOverrideDate("");
+      setNewOverrideNote("");
+      setNewOverrideClosed(false);
+      setNewOverrideStart("10:00");
+      setNewOverrideEnd("19:00");
+    }
+    setSavingOverride(false);
+  };
+
+  const removeOverride = async (id: string) => {
+    await fetch("/api/admin/availability-overrides", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setOverrides((prev) => prev.filter((o) => o.id !== id));
+  };
+
   return (
     <main className="min-h-screen p-4 md:p-10 bg-salon-bg relative">
       <MuralDecorations />
@@ -108,9 +178,12 @@ export default function SchedulePage() {
 
         {/* Horario semanal */}
         <section className="bg-white rounded-2xl border-2 border-salon-olive/20 shadow-folk p-4 md:p-6 mb-6">
-          <h2 className="text-xs font-black text-salon-olive uppercase tracking-widest mb-5">
-            Horario semanal
+          <h2 className="text-xs font-black text-salon-olive uppercase tracking-widest mb-1">
+            Horario semanal base
           </h2>
+          <p className="text-xs text-salon-gray mb-5">
+            Plantilla recurrente. Los horarios específicos por fecha (abajo) tienen prioridad sobre esta plantilla.
+          </p>
 
           {loadingSchedule ? (
             <div className="text-center py-8 text-salon-gray animate-pulse text-xs uppercase tracking-widest">
@@ -171,9 +244,107 @@ export default function SchedulePage() {
           </button>
         </section>
 
+        {/* Horarios específicos por fecha */}
+        <section className="bg-white rounded-2xl border-2 border-salon-lavender/30 shadow-folk p-4 md:p-6 mb-6">
+          <h2 className="text-xs font-black text-salon-lavender uppercase tracking-widest mb-1">
+            Horarios específicos por fecha
+          </h2>
+          <p className="text-xs text-salon-gray mb-4">
+            Para días con horario distinto al habitual. Sobreescriben el horario semanal en esa fecha concreta.
+          </p>
+
+          {/* Add override form */}
+          <div className="space-y-3 mb-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="date"
+                value={newOverrideDate}
+                onChange={(e) => setNewOverrideDate(e.target.value)}
+                min={minDate}
+                className="border-2 border-salon-lavender/30 rounded-lg px-3 py-2 text-sm text-salon-brown font-bold focus:border-salon-lavender outline-none bg-white flex-1"
+              />
+              <label className="flex items-center gap-2 cursor-pointer px-3 py-2 border-2 border-salon-lavender/30 rounded-lg bg-white shrink-0 select-none">
+                <input
+                  type="checkbox"
+                  checked={newOverrideClosed}
+                  onChange={(e) => setNewOverrideClosed(e.target.checked)}
+                  className="accent-salon-terracotta w-4 h-4"
+                />
+                <span className="text-xs font-black uppercase tracking-wider text-salon-gray">Cerrado ese día</span>
+              </label>
+            </div>
+
+            {!newOverrideClosed && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={newOverrideStart}
+                  onChange={(e) => setNewOverrideStart(e.target.value)}
+                  className="border-2 border-salon-lavender/30 rounded-lg px-2 py-2 text-sm text-salon-brown font-bold focus:border-salon-lavender outline-none bg-white flex-1"
+                />
+                <span className="text-salon-gray text-xs font-bold shrink-0">a</span>
+                <input
+                  type="time"
+                  value={newOverrideEnd}
+                  onChange={(e) => setNewOverrideEnd(e.target.value)}
+                  className="border-2 border-salon-lavender/30 rounded-lg px-2 py-2 text-sm text-salon-brown font-bold focus:border-salon-lavender outline-none bg-white flex-1"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newOverrideNote}
+                onChange={(e) => setNewOverrideNote(e.target.value)}
+                placeholder="Nota (opcional, ej: cita fuera del salón)"
+                className="border-2 border-salon-lavender/30 rounded-lg px-3 py-2 text-sm text-salon-brown focus:border-salon-lavender outline-none bg-white flex-1"
+              />
+              <button
+                onClick={addOverride}
+                disabled={savingOverride || !newOverrideDate}
+                className="px-5 py-2 bg-salon-lavender text-white font-black text-sm uppercase rounded-lg hover:bg-salon-lavender/80 transition-colors shrink-0 disabled:opacity-40"
+              >
+                {savingOverride ? "..." : "+"}
+              </button>
+            </div>
+          </div>
+
+          {/* Override list */}
+          {overrides.length === 0 ? (
+            <p className="text-center text-salon-gray text-xs py-4 uppercase tracking-wider">
+              Sin horarios específicos programados
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {overrides.map((ov) => (
+                <div key={ov.id} className="flex items-center justify-between bg-salon-bg rounded-lg px-3 py-2 border border-salon-lavender/20">
+                  <div className="flex-1 min-w-0">
+                    <span className="font-black text-salon-brown text-sm block truncate capitalize">
+                      {parseDateLabel(ov.date)}
+                    </span>
+                    <span className={`text-xs font-bold ${ov.isClosed ? "text-salon-terracotta" : "text-salon-olive"}`}>
+                      {ov.isClosed ? "Cerrado" : `${ov.startTime} – ${ov.endTime}`}
+                    </span>
+                    {ov.note && (
+                      <span className="text-salon-gray text-xs ml-2">— {ov.note}</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => removeOverride(ov.id)}
+                    className="text-red-400 hover:text-red-600 font-black text-sm ml-3 shrink-0"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* Días bloqueados */}
         <section className="bg-white rounded-2xl border-2 border-salon-terracotta/20 shadow-folk p-4 md:p-6">
-          <h2 className="text-xs font-black text-salon-terracotta uppercase tracking-widest mb-3">
+          <h2 className="text-xs font-black text-salon-terracotta uppercase tracking-widest mb-1">
             Días bloqueados
           </h2>
           <p className="text-xs text-salon-gray mb-4">
