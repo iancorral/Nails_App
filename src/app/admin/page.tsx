@@ -37,28 +37,32 @@ export default function AdminDashboard() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
 
   useEffect(() => {
-    fetchAppointments();
-    fetchReminders();
+    let cancelled = false;
+
+    fetch('/api/appointments')
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        setAppointments(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error(error);
+        setLoading(false);
+      });
+
+    fetch('/api/admin/reminders')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setReminders(data);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  const fetchAppointments = async () => {
-    try {
-      const res = await fetch('/api/appointments');
-      const data = await res.json();
-      setAppointments(data);
-      setLoading(false);
-    } catch (error) {
-      console.error(error);
-      setLoading(false);
-    }
-  };
-
-  const fetchReminders = async () => {
-    try {
-      const res = await fetch('/api/admin/reminders');
-      if (res.ok) setReminders(await res.json());
-    } catch {}
-  };
 
   const markReminderSent = async (id: string) => {
     await fetch('/api/admin/reminders', {

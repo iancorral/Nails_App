@@ -15,16 +15,22 @@ type Metrics = {
 export default function MetricsDashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [period, setPeriod] = useState<"week" | "month">("week");
-  const [loading, setLoading] = useState(true);
+
+  // Derivamos el estado de carga: mostramos el esqueleto mientras los datos
+  // actuales no correspondan al periodo seleccionado. Así evitamos llamar a
+  // setState de forma síncrona dentro del efecto.
+  const loading = !metrics || metrics.period !== period;
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     fetch(`/api/admin/metrics?period=${period}`)
       .then((r) => r.json())
       .then((data) => {
-        setMetrics(data);
-        setLoading(false);
+        if (!cancelled) setMetrics(data);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [period]);
 
   return (

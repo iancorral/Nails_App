@@ -33,9 +33,13 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
       const safePhone = parsed.phone?.replace(/[^0-9+]/g, "").trim();
 
       if (safeName && safePhone) {
+        // Sincronizamos desde localStorage (sistema externo) tras el montaje:
+        // se hace en el efecto a propósito para no romper la hidratación SSR.
+        /* eslint-disable react-hooks/set-state-in-effect */
         setName(safeName);
         setPhone(safePhone);
         setIsReturningUser(true);
+        /* eslint-enable react-hooks/set-state-in-effect */
       }
     } catch {
       localStorage.removeItem("tangible_client");

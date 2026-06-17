@@ -24,8 +24,9 @@ export default function RescheduleModal({
 }: Props) {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [loadingTimes, setLoadingTimes] = useState(false);
+  // Resultados de disponibilidad etiquetados con su petición (fecha + duración),
+  // para derivar carga/horarios sin setState síncrono dentro del efecto.
+  const [result, setResult] = useState<{ key: string; times: string[] } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -34,19 +35,24 @@ export default function RescheduleModal({
   const minDateStr = format(today, "yyyy-MM-dd");
   const maxDateStr = format(maxDate, "yyyy-MM-dd");
 
+  const reqKey = selectedDate && totalDuration > 0 ? `${selectedDate}|${totalDuration}` : null;
+  const loadingTimes = !!reqKey && result?.key !== reqKey;
+  const availableTimes = result?.key === reqKey ? result.times : [];
+
   useEffect(() => {
-    if (!selectedDate || totalDuration === 0) return;
-    setLoadingTimes(true);
-    setAvailableTimes([]);
-    setSelectedTime("");
+    if (!reqKey) return;
+    let cancelled = false;
 
     fetch(`/api/availability?date=${selectedDate}&duration=${totalDuration}`)
       .then((r) => r.json())
       .then((data) => {
-        setAvailableTimes(data);
-        setLoadingTimes(false);
+        if (!cancelled) setResult({ key: reqKey, times: data });
       });
-  }, [selectedDate, totalDuration]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reqKey, selectedDate, totalDuration]);
 
   const handleSave = async () => {
     if (!selectedDate || !selectedTime) {
@@ -108,7 +114,10 @@ export default function RescheduleModal({
             <input
               type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setSelectedTime("");
+              }}
               min={minDateStr}
               max={maxDateStr}
               className="w-full border-2 border-salon-gray/30 rounded-xl px-4 py-3 text-salon-brown font-medium focus:border-salon-olive outline-none"

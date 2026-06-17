@@ -40,16 +40,21 @@ function RevenueContent() {
 
   const [period, setPeriod] = useState<"week" | "month">(initialPeriod);
   const [data, setData] = useState<RevenueData | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // Carga derivada: el esqueleto se muestra mientras los datos cargados no
+  // correspondan al periodo seleccionado (evita setState síncrono en el efecto).
+  const loading = !data || data.period !== period;
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     fetch(`/api/admin/revenue?period=${period}`)
       .then((r) => r.json())
       .then((d) => {
-        setData(d);
-        setLoading(false);
+        if (!cancelled) setData(d);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [period]);
 
   const groups = (["CASH", "TRANSFER", "CARD", "PENDING"] as const).map((method) => ({

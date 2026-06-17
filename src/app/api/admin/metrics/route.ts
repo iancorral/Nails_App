@@ -15,13 +15,10 @@ export async function GET(req: Request) {
   const start = period === "week" ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now);
   const end = period === "week" ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now);
 
-  const [appointments, services] = await Promise.all([
-    prisma.appointment.findMany({
-      where: { date: { gte: start, lte: end } },
-      include: { services: true },
-    }),
-    prisma.service.findMany({ where: { isActive: true } }),
-  ]);
+  const appointments = await prisma.appointment.findMany({
+    where: { date: { gte: start, lte: end } },
+    include: { services: true },
+  });
 
   const confirmed = appointments.filter((a) => a.status === "CONFIRMED");
   const cancelled = appointments.filter((a) => a.status === "CANCELLED");

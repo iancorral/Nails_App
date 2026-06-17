@@ -54,7 +54,10 @@ export default function SchedulePage() {
   const [savingOverride, setSavingOverride] = useState(false);
 
   useEffect(() => {
+    // Calculamos "hoy" solo en el cliente para usar el reloj/zona horaria del
+    // navegador y evitar desajustes de hidratación con el servidor (UTC).
     const d = new Date();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMinDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
 
     Promise.all([

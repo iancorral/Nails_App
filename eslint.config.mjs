@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Auto-generated type declarations (e.g. src/types/routes.d.ts) — do not lint.
+    "**/*.d.ts",
   ]),
 ]);
 

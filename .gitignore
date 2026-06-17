@@ -43,3 +43,6 @@ next-env.d.ts
 /app/generated/prisma
 
 prisma/create-admin.ts
+
+tangiblefixes.patch
+.gitignore

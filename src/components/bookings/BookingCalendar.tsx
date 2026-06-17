@@ -13,37 +13,43 @@ interface BookingCalendarProps {
 export default function BookingCalendar({ onDateTimeSelect, totalDuration }: BookingCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [loadingTimes, setLoadingTimes] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Resultados de disponibilidad etiquetados con la petición a la que pertenecen
+  // (fecha + duración), para poder derivar carga/error sin setState síncrono.
+  const [result, setResult] = useState<{ key: string; times: string[] } | null>(null);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
 
   const today = new Date();
   const nextDays = Array.from({ length: 10 }, (_, i) => addDays(today, i));
 
-  useEffect(() => {
-    if (selectedDate) {
-      setLoadingTimes(true);
-      setAvailableTimes([]); 
-      setError(null);
+  const dateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
+  const reqKey = dateStr ? `${dateStr}|${totalDuration}` : null;
 
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      
-      fetch(`/api/availability?date=${dateStr}&duration=${totalDuration}`)
-        .then(async (res) => {
-          if (!res.ok) throw new Error("Error al conectar con el servidor.");
-          return res.json();
-        })
-        .then(data => {
-          setAvailableTimes(data);
-          setLoadingTimes(false);
-        })
-        .catch(err => {
-          console.error(err);
-          setError("No pudimos cargar los horarios.");
-          setLoadingTimes(false);
-        });
-    }
-  }, [selectedDate, totalDuration]);
+  // Estado derivado de la petición vigente.
+  const error = reqKey && errorKey === reqKey ? "No pudimos cargar los horarios." : null;
+  const loadingTimes = !!reqKey && result?.key !== reqKey && errorKey !== reqKey;
+  const availableTimes = result?.key === reqKey ? result.times : [];
+
+  useEffect(() => {
+    if (!reqKey || !dateStr) return;
+    let cancelled = false;
+
+    fetch(`/api/availability?date=${dateStr}&duration=${totalDuration}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Error al conectar con el servidor.");
+        return res.json();
+      })
+      .then((times) => {
+        if (!cancelled) setResult({ key: reqKey, times });
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!cancelled) setErrorKey(reqKey);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reqKey, dateStr, totalDuration]);
 
   return (
     <div className="mt-8 animate-in fade-in slide-in-from-bottom-4">

@@ -141,7 +141,7 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
           {step === 1 && (
             <>
               <p className="text-[10px] text-salon-gray font-bold uppercase tracking-widest">
-                Para cambiar fecha u hora: usa el botón "↕ Mover" en la agenda.
+                Para cambiar fecha u hora: usa el botón &quot;↕ Mover&quot; en la agenda.
               </p>
 
               <div>
