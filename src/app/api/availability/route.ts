@@ -1,116 +1,127 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { addMinutes, format, isBefore } from "date-fns";
+import { addMinutes, isBefore } from "date-fns";
 import { z } from "zod";
+import { chihuahuaToUTC, minutesToLabel, CHIHUAHUA_UTC_OFFSET } from "@/lib/timezone";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
+
+// Minutes of prep/cleanup buffer reserved after each appointment ends.
+// Customers cannot book a slot that starts within this window after an appointment.
+const BUFFER_AFTER_APPOINTMENT = 30;
 
 const availabilitySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   duration: z.number().int().min(15).max(480),
+  excludeId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
 });
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const dateParam = searchParams.get("date");
   const durationParam = searchParams.get("duration");
+  const excludeIdParam = searchParams.get("excludeId");
 
   const validation = availabilitySchema.safeParse({
     date: dateParam,
     duration: durationParam ? parseInt(durationParam) : undefined,
+    excludeId: excludeIdParam ?? undefined,
   });
 
   if (!validation.success) {
     return NextResponse.json({ error: "Parámetros inválidos" }, { status: 400 });
   }
 
-  const { date, duration } = validation.data;
+  const { date, duration, excludeId } = validation.data;
   const [year, month, day] = date.split("-").map(Number);
   const dayOfWeek = new Date(year, month - 1, day).getDay();
 
-  // Chihuahua es UTC-6 en verano (CDT), UTC-7 en invierno (CST)
-  // Ahorita estamos en verano
-  const utcOffsetHours = 6;
-
   try {
-    // 1. Verificar si el día está bloqueado
-    // dayStart y dayEnd en UTC cubriendo el día completo de Chihuahua
-    const dayStart = new Date(Date.UTC(year, month - 1, day, utcOffsetHours, 0, 0));
-    const dayEnd = new Date(Date.UTC(year, month - 1, day + 1, utcOffsetHours, 0, 0));
+    const dayStart = chihuahuaToUTC(year, month, day, 0, 0);
+    const dayEnd = chihuahuaToUTC(year, month, day + 1, 0, 0);
 
-    const blockedDate = await prisma.blockedDate.findFirst({
-      where: { date: { gte: dayStart, lte: dayEnd } },
+    // --- Check date-specific override first ---
+    const override = await prisma.availabilityOverride.findFirst({
+      where: { date: { gte: dayStart, lt: dayEnd } },
     });
 
+    if (override?.isClosed) return NextResponse.json([]);
+
+    // --- Día bloqueado ---
+    const blockedDate = await prisma.blockedDate.findFirst({
+      where: { date: { gte: dayStart, lt: dayEnd } },
+    });
     if (blockedDate) return NextResponse.json([]);
 
-    // 2. Obtener el horario del día de la semana
-    const schedule = await prisma.workSchedule.findFirst({
-      where: { dayOfWeek },
-    });
+    // --- Horario laboral (override > weekly schedule > defaults) ---
+    let startMinutes: number;
+    let endMinutes: number;
 
-    if (schedule?.isDayOff) return NextResponse.json([]);
+    if (override?.startTime && override?.endTime) {
+      const [sh, sm] = override.startTime.split(":").map(Number);
+      const [eh, em] = override.endTime.split(":").map(Number);
+      startMinutes = sh * 60 + sm;
+      endMinutes = eh * 60 + em;
+    } else {
+      const schedule = await prisma.workSchedule.findFirst({ where: { dayOfWeek } });
+      if (schedule?.isDayOff) return NextResponse.json([]);
+      const [startH, startM] = (schedule?.startTime ?? "10:00").split(":").map(Number);
+      const [endH, endM] = (schedule?.endTime ?? "19:00").split(":").map(Number);
+      startMinutes = startH * 60 + startM;
+      endMinutes = endH * 60 + endM;
+    }
 
-    const [startH, startM] = (schedule?.startTime ?? "10:00").split(":").map(Number);
-    const [endH, endM] = (schedule?.endTime ?? "19:00").split(":").map(Number);
-
-    // Construir workStart y workEnd en UTC equivalente a hora Chihuahua
-    const workStart = new Date(Date.UTC(year, month - 1, day, startH + utcOffsetHours, startM, 0));
-    const workEnd = new Date(Date.UTC(year, month - 1, day, endH + utcOffsetHours, endM, 0));
-
-    // 3. Filtrar horarios pasados si es hoy
+    // --- ¿Es hoy en Chihuahua? ---
     const now = new Date();
-    const chihuahuaNow = new Date(now.getTime() - utcOffsetHours * 60 * 60 * 1000);
-
+    const chihuahuaNow = new Date(now.getTime() - CHIHUAHUA_UTC_OFFSET * 3600000);
     const isToday =
       chihuahuaNow.getUTCFullYear() === year &&
       chihuahuaNow.getUTCMonth() === month - 1 &&
       chihuahuaNow.getUTCDate() === day;
 
-    // 4. Traer citas confirmadas del día
+    // --- Citas confirmadas del día ---
     const appointments = await prisma.appointment.findMany({
       where: {
         status: "CONFIRMED",
+        ...(excludeId ? { id: { not: excludeId } } : {}),
         OR: [
-          { date: { gte: dayStart, lte: dayEnd } },
-          { endDate: { gte: dayStart, lte: dayEnd } },
+          { date: { gte: dayStart, lt: dayEnd } },
+          { endDate: { gt: dayStart, lte: dayEnd } },
         ],
       },
     });
 
-    const availableSlots: string[] = [];
-    let currentSlot = new Date(workStart);
+    // --- Generar slots ---
+    const slots: string[] = [];
+    let currentMinutes = startMinutes;
 
-    while (currentSlot.getTime() <= workEnd.getTime()) {
-      const potentialEnd = addMinutes(currentSlot, duration);
+    while (currentMinutes + duration <= endMinutes) {
+      const slotStart = chihuahuaToUTC(year, month, day, Math.floor(currentMinutes / 60), currentMinutes % 60);
+      const slotEnd = addMinutes(slotStart, duration);
 
       if (isToday) {
         const thirtyMinFromNow = addMinutes(now, 30);
-        if (isBefore(currentSlot, thirtyMinFromNow)) {
-          currentSlot = addMinutes(currentSlot, 30);
+        if (isBefore(slotStart, thirtyMinFromNow)) {
+          currentMinutes += 30;
           continue;
         }
       }
 
-      const isCollision = appointments.some((app) => {
+      const hasCollision = appointments.some((app) => {
         const appStart = new Date(app.date);
-        const appEnd = new Date(app.endDate);
-        return (
-          currentSlot.getTime() < appEnd.getTime() &&
-          potentialEnd.getTime() > appStart.getTime()
-        );
+        // Extend appointment end by buffer so the next slot must start after the gap
+        const appEndWithBuffer = addMinutes(new Date(app.endDate), BUFFER_AFTER_APPOINTMENT);
+        return slotStart.getTime() < appEndWithBuffer.getTime() && slotEnd.getTime() > appStart.getTime();
       });
 
-      if (!isCollision) {
-        // Formatear el slot en hora Chihuahua para mostrar al usuario
-        const slotInChihuahua = new Date(currentSlot.getTime() - utcOffsetHours * 60 * 60 * 1000);
-        availableSlots.push(format(slotInChihuahua, "HH:mm"));
+      if (!hasCollision) {
+        slots.push(minutesToLabel(currentMinutes));
       }
 
-      currentSlot = addMinutes(currentSlot, 30);
+      currentMinutes += 30;
     }
 
-    return NextResponse.json(availableSlots);
+    return NextResponse.json(slots);
   } catch {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }

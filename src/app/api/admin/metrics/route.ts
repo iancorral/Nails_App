@@ -26,9 +26,13 @@ export async function GET(req: Request) {
   const confirmed = appointments.filter((a) => a.status === "CONFIRMED");
   const cancelled = appointments.filter((a) => a.status === "CANCELLED");
 
-  // Ingresos proyectados (citas confirmadas)
+  // Ingresos confirmados — usa finalPrice si fue ajustado, si no suma servicios
   const revenue = confirmed.reduce((acc, app) => {
-    return acc + app.services.reduce((s, svc) => s + svc.price, 0);
+    const price =
+      app.finalPrice != null
+        ? Number(app.finalPrice)
+        : app.services.reduce((s, svc) => s + svc.price, 0);
+    return acc + price;
   }, 0);
 
   // Servicio más solicitado
