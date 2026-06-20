@@ -3,12 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { addMinutes, isBefore } from "date-fns";
 import { z } from "zod";
 import { chihuahuaToUTC, minutesToLabel, CHIHUAHUA_UTC_OFFSET } from "@/lib/timezone";
+import { resolveDayWindow, BUFFER_AFTER_APPOINTMENT } from "@/lib/availability";
 
 export const dynamic = "force-dynamic";
-
-// Minutes of prep/cleanup buffer reserved after each appointment ends.
-// Customers cannot book a slot that starts within this window after an appointment.
-const BUFFER_AFTER_APPOINTMENT = 30;
 
 const availabilitySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -34,42 +31,15 @@ export async function GET(req: Request) {
 
   const { date, duration, excludeId } = validation.data;
   const [year, month, day] = date.split("-").map(Number);
-  const dayOfWeek = new Date(year, month - 1, day).getDay();
 
   try {
     const dayStart = chihuahuaToUTC(year, month, day, 0, 0);
     const dayEnd = chihuahuaToUTC(year, month, day + 1, 0, 0);
 
-    // --- Check date-specific override first ---
-    const override = await prisma.availabilityOverride.findFirst({
-      where: { date: { gte: dayStart, lt: dayEnd } },
-    });
-
-    if (override?.isClosed) return NextResponse.json([]);
-
-    // --- Día bloqueado ---
-    const blockedDate = await prisma.blockedDate.findFirst({
-      where: { date: { gte: dayStart, lt: dayEnd } },
-    });
-    if (blockedDate) return NextResponse.json([]);
-
-    // --- Horario laboral (override > weekly schedule > defaults) ---
-    let startMinutes: number;
-    let endMinutes: number;
-
-    if (override?.startTime && override?.endTime) {
-      const [sh, sm] = override.startTime.split(":").map(Number);
-      const [eh, em] = override.endTime.split(":").map(Number);
-      startMinutes = sh * 60 + sm;
-      endMinutes = eh * 60 + em;
-    } else {
-      const schedule = await prisma.workSchedule.findFirst({ where: { dayOfWeek } });
-      if (schedule?.isDayOff) return NextResponse.json([]);
-      const [startH, startM] = (schedule?.startTime ?? "10:00").split(":").map(Number);
-      const [endH, endM] = (schedule?.endTime ?? "19:00").split(":").map(Number);
-      startMinutes = startH * 60 + startM;
-      endMinutes = endH * 60 + endM;
-    }
+    // --- Horario laboral (override > weekly schedule > defaults; cerrado/bloqueado/día libre) ---
+    const window = await resolveDayWindow(year, month, day);
+    if (window.closed) return NextResponse.json([]);
+    const { startMinutes, endMinutes } = window;
 
     // --- ¿Es hoy en Chihuahua? ---
     const now = new Date();

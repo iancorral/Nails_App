@@ -27,11 +27,19 @@ export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-  const { id } = await req.json();
-  const updated = await prisma.reminder.update({
-    where: { id },
-    data: { sent: true },
-  });
+  try {
+    const { id } = await req.json();
+    if (typeof id !== "string" || !/^[a-f\d]{24}$/i.test(id)) {
+      return NextResponse.json({ error: "ID inválido" }, { status: 400 });
+    }
 
-  return NextResponse.json(updated);
+    const updated = await prisma.reminder.update({
+      where: { id },
+      data: { sent: true },
+    });
+
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  }
 }

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { addMinutes } from 'date-fns';
-import { z } from 'zod'; 
+import { z } from 'zod';
+import { isSlotBookable } from '@/lib/availability';
 
 const bookingSchema = z.object({
   clientName: z
@@ -54,7 +55,12 @@ export async function POST(req: Request) {
     const startDate = new Date(date);
     const endDate = addMinutes(startDate, totalDuration);
 
-    console.log(`⏱️ Cita de ${totalDuration} min. Fin: ${endDate}`);
+    // Authoritative server-side availability check. The availability grid is only
+    // advisory; never trust the client to have picked a valid, free slot.
+    const slotCheck = await isSlotBookable(startDate, totalDuration);
+    if (!slotCheck.ok) {
+      return NextResponse.json({ error: slotCheck.reason }, { status: 409 });
+    }
 
     const appointment = await prisma.appointment.create({
       data: {

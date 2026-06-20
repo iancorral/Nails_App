@@ -117,6 +117,7 @@ export default function DayAgenda({
           onClick={() => onAppointmentClick(app)}
           onPaymentClick={() => onPaymentClick(app)}
           onMoveClick={() => onStartMove(app)}
+          onCancelMove={onCancelMove}
         />
       );
 
@@ -220,6 +221,7 @@ export default function DayAgenda({
               onClick={() => onAppointmentClick(app)}
               onPaymentClick={() => onPaymentClick(app)}
               onMoveClick={() => onStartMove(app)}
+              onCancelMove={onCancelMove}
             />
           ))}
         </>
@@ -229,7 +231,7 @@ export default function DayAgenda({
 }
 
 function AppointmentCard({
-  app, isMoving, dimmed, onClick, onPaymentClick, onMoveClick,
+  app, isMoving, dimmed, onClick, onPaymentClick, onMoveClick, onCancelMove,
 }: {
   app: AgendaAppointment;
   isMoving: boolean;
@@ -237,6 +239,7 @@ function AppointmentCard({
   onClick: () => void;
   onPaymentClick: () => void;
   onMoveClick: () => void;
+  onCancelMove: () => void;
 }) {
   const startMin   = utcDateToChihuahuaMinutes(new Date(app.date));
   const endMin     = utcDateToChihuahuaMinutes(new Date(app.endDate));
@@ -279,12 +282,16 @@ function AppointmentCard({
             : ""}
         </button>
 
-        {/* Botón mover */}
+        {/* Botón mover — al estar moviendo, actúa como cancelar */}
         <button
-          onClick={(e) => { e.stopPropagation(); onMoveClick(); }}
-          className="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-white/70 hover:bg-white transition-all"
+          onClick={(e) => { e.stopPropagation(); if (isMoving) onCancelMove(); else onMoveClick(); }}
+          className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg transition-all ${
+            isMoving
+              ? "bg-red-100 text-red-700 hover:bg-red-200"
+              : "bg-white/70 hover:bg-white"
+          }`}
         >
-          ↕ {isMoving ? "Moviendo..." : "Mover"}
+          {isMoving ? "✕ Cancelar" : "↕ Mover"}
         </button>
 
         {/* WhatsApp */}

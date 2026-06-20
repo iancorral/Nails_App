@@ -4,8 +4,14 @@ import { format, addDays, startOfDay, endOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 
 export async function GET(req: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  // Fail closed: if the secret is not configured, never treat the route as open
+  // (otherwise an attacker could pass `Bearer undefined` and match).
+  if (!cronSecret) {
+    return NextResponse.json({ error: "No configurado" }, { status: 500 });
+  }
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
