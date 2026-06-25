@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
-import AdminTimeGrid, { DayOverviewAppointment } from "@/components/admin/AdminTimeGrid"; 
+import AdminTimeGrid, { DayOverviewAppointment } from "@/components/admin/AdminTimeGrid";
+import WhatsAppIcon from "@/components/icons/WhatsAppIcon";
+import { buildConfirmationMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
 
 type Service = {
   id: string;
@@ -57,6 +59,9 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Tras crear la cita: URL de WhatsApp con la confirmación lista para enviar.
+  const [confirmUrl, setConfirmUrl] = useState<string | null>(null);
 
   // Si viene con fecha preseleccionada, saltar al paso 1 con la fecha lista
   useEffect(() => {
@@ -178,8 +183,16 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     });
 
     if (res.ok) {
-      onCreated();
-      onClose();
+      // Mensaje de confirmación con la fecha/hora EXACTA recién agendada
+      // (finalDate es el instante UTC real → se formatea en hora de Chihuahua).
+      const serviceNames = selectedServices.map((s) => s.name);
+      const message = buildConfirmationMessage({
+        clientName,
+        date: finalDate,
+        serviceNames,
+      });
+      setConfirmUrl(buildWhatsAppUrl(clientPhone, message));
+      onCreated(); // refresca el calendario detrás del modal
     } else {
       const data = await res.json();
       const fieldErrors = data?.details
@@ -203,6 +216,49 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
   const maxDateStr = format(maxDate, "yyyy-MM-dd");
 
   const categories = Array.from(new Set(allServices.map((s) => s.category)));
+
+  // ── Vista de éxito: cita creada, lista para enviar confirmación ──
+  if (confirmUrl) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative z-10 bg-white w-full max-w-lg rounded-3xl border-2 border-salon-olive/30 shadow-xl my-6">
+          <div className="p-8 text-center space-y-5">
+            <div className="w-16 h-16 mx-auto rounded-full bg-salon-olive/10 flex items-center justify-center">
+              <svg className="w-8 h-8 text-salon-olive" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-black text-salon-brown uppercase tracking-wider">Cita creada</h2>
+              <p className="text-xs text-salon-gray mt-1">
+                Envía la confirmación a{" "}
+                <span className="font-bold text-salon-brown">{clientName.split(" ")[0]}</span>{" "}
+                por WhatsApp.
+              </p>
+            </div>
+
+            <a
+              href={confirmUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:brightness-95 transition-all"
+            >
+              <WhatsAppIcon className="w-4 h-4" />
+              Enviar confirmación
+            </a>
+
+            <button
+              onClick={onClose}
+              className="w-full py-3 bg-white text-salon-gray border-2 border-salon-gray/20 font-black text-xs uppercase tracking-widest rounded-2xl hover:border-salon-olive/40 transition-all"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
