@@ -70,15 +70,18 @@ model BlockedDate {
   createdAt DateTime @default(now())
 }
 
+// Registro de recordatorios enviados (bitácora). El mensaje/URL se genera en
+// vivo desde los datos actuales de la cita, así nunca queda desfasado.
 model Reminder {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  appointmentId String   @db.ObjectId
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  appointmentId String    @db.ObjectId
   clientName    String
   clientPhone   String
   scheduledFor  DateTime
-  whatsappUrl   String
-  sent          Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  whatsappUrl   String?
+  sent          Boolean   @default(false)
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
 }
 
 model AvailabilityOverride {

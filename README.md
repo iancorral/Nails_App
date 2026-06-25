@@ -12,7 +12,8 @@ Tangible is a mobile-first SaaS-style booking platform that allows clients to br
 - WhatsApp-based booking confirmation flow.
 - Secure admin dashboard with JWT authentication and bcrypt password hashing.
 - Appointment management with cancellation modal and status tracking.
-- Daily WhatsApp reminder generation via Vercel Cron Jobs.
+- One-tap WhatsApp confirmation on admin-created appointments, plus a next-day reminder panel (single or send-all), all timezone-correct for Chihuahua (UTC-6). Message templates are centralized in `src/lib/whatsapp.ts`.
+- Admin-only registration of past appointments (for accurate history/revenue); past days render faded in the calendar while the public flow still blocks past dates.
 - Revenue metrics dashboard with week/month selector.
 - QR code generator for in-studio display.
 - Anti-bot honeypot field on booking form.
@@ -28,43 +29,71 @@ Tangible is a mobile-first SaaS-style booking platform that allows clients to br
 - Deployment: Vercel
 
 ## Project Structure
-src/
-├── app/
-│   ├── admin/          # Admin dashboard, schedule, QR pages
-│   ├── api/            # REST API routes (bookings, availability, cron)
-│   ├── login/          # Admin login page
-│   └── page.tsx        # Client-facing booking page
-├── components/
-│   ├── admin/          # MetricsDashboard
-│   ├── bookings/       # ServiceCard, BookingCalendar, ClientForm
-│   └── layout/         # MuralDecorations background
-├── lib/
-│   ├── auth.ts         # NextAuth configuration
-│   └── prisma.ts       # Prisma client singleton
-└── prisma/
-    ├── schema.prisma   # MongoDB schema
-    └── seed.ts         # Service catalog seed
+
+```text
+.
+├── prisma/
+│   ├── schema.prisma           # MongoDB schema (Prisma)
+│   └── seed.ts                 # Service catalog seed
+├── src/
+│   ├── app/
+│   │   ├── admin/              # Dashboard, calendar, schedule, QR, revenue
+│   │   ├── api/                # REST API routes (bookings, availability, admin)
+│   │   ├── login/             # Admin login page
+│   │   ├── layout.tsx         # Root layout
+│   │   └── page.tsx           # Client-facing booking page
+│   ├── components/
+│   │   ├── admin/             # Calendar agenda, appointment modals, payments, metrics
+│   │   ├── bookings/          # ServiceCard, BookingCalendar, ClientForm
+│   │   ├── icons/             # WhatsAppIcon
+│   │   └── layout/            # MuralDecorations background
+│   ├── lib/
+│   │   ├── config/            # business.ts — centralized business config
+│   │   ├── auth.ts            # NextAuth configuration
+│   │   ├── prisma.ts          # Prisma client singleton
+│   │   ├── availability.ts    # Server-side slot availability rules
+│   │   ├── timezone.ts        # Chihuahua (UTC-6) date/time helpers
+│   │   └── whatsapp.ts        # Centralized WhatsApp message templates
+│   └── types/                 # Shared TypeScript types
+├── next.config.ts              # Security headers (CSP, HSTS, ...)
+├── vercel.json                 # Vercel deployment config
+└── tailwind.config.js          # Tailwind theme
+```
 
 ## Local Development
-1. Clone the repository and install dependencies:
-git clone https://github.com/iancorral/Nails_App
-cd Nails_App
-npm install
 
-2. Create a .env file in the root with the following variables:
-DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=http://localhost:3000
-CRON_SECRET=
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_WHATSAPP_NUMBER=
+1. Clone the repository and install dependencies:
+
+   ```bash
+   git clone https://github.com/iancorral/Nails_App
+   cd Nails_App
+   npm install
+   ```
+
+2. Create a `.env` file in the root with the following variables:
+
+   ```env
+   DATABASE_URL=
+   NEXTAUTH_SECRET=
+   NEXTAUTH_URL=http://localhost:3000
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+   NEXT_PUBLIC_WHATSAPP_NUMBER=
+   # Optional — overrides the business name used in WhatsApp messages
+   NEXT_PUBLIC_BUSINESS_NAME=
+   ```
 
 3. Generate the Prisma client and seed the service catalog:
-npx prisma generate
-npx ts-node --project tsconfig.scripts.json prisma/seed.ts
+
+   ```bash
+   npx prisma generate
+   npx ts-node --project tsconfig.scripts.json prisma/seed.ts
+   ```
 
 4. Run the development server:
-npm run dev
+
+   ```bash
+   npm run dev
+   ```
 
 ## Security
 - NextAuth JWT sessions with 8-hour expiry.

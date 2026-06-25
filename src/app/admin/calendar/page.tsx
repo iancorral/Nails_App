@@ -13,7 +13,7 @@ import CreateAppointmentModal from "@/components/admin/CreateAppointmentModal";
 import EditAppointmentModal from "@/components/admin/EditAppointmentModal";
 import PaymentModal from "@/components/admin/PaymentModal";
 import DayAgenda, { AgendaAppointment } from "@/components/admin/DayAgenda";
-import { chihuahuaToUTC } from "@/lib/timezone";
+import { chihuahuaToUTC, chihuahuaDateKey } from "@/lib/timezone";
 
 type DaySchedule = {
   dayOfWeek: number;
@@ -74,7 +74,8 @@ function CalendarContent() {
   const appointmentsByDay = useMemo(() => {
     const map: Record<string, AgendaAppointment[]> = {};
     appointments.forEach((a) => {
-      const key = format(new Date(a.date), "yyyy-MM-dd");
+      // Agrupar por día de calendario de Chihuahua (no por la zona del navegador).
+      const key = chihuahuaDateKey(new Date(a.date));
       if (!map[key]) map[key] = [];
       map[key].push(a);
     });
@@ -90,7 +91,11 @@ function CalendarContent() {
   const selectedDayAppointments = useMemo(
     () =>
       appointments
-        .filter((a) => isSameDay(new Date(a.date), selectedDate))
+        .filter(
+          (a) =>
+            chihuahuaDateKey(new Date(a.date)) ===
+            format(selectedDate, "yyyy-MM-dd")
+        )
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
     [appointments, selectedDate]
   );
@@ -310,7 +315,7 @@ function CalendarContent() {
                 </p>
                 {isSelectedPast && (
                   <p className="text-[10px] text-white/70 font-bold mt-1">
-                    Fecha pasada — solo lectura
+                    Fecha pasada — registro manual para historial
                   </p>
                 )}
               </div>
@@ -344,9 +349,9 @@ function CalendarContent() {
             setQuickTime(undefined);
           }}
           onCreated={() => {
+            // Solo refrescamos; el modal muestra el paso de confirmación y se
+            // cierra con su propio botón (onClose).
             fetchAppointments();
-            setShowCreateModal(false);
-            setQuickTime(undefined);
           }}
           preselectedDate={selectedDate}
           preselectedTime={quickTime}

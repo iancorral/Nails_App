@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useState, useEffect, useCallback } from 'react';
 import MetricsDashboard from '@/components/admin/MetricsDashboard';
 import MuralDecorations from '@/components/layout/MuralDecorations';
 import PaymentBadge from '@/components/admin/PaymentBadge';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
+import { buildReminderUrl } from '@/lib/whatsapp';
+import {
+  formatChihuahuaTime,
+  formatChihuahuaMonthShort,
+  getChihuahuaParts,
+  chihuahuaDateKey,
+} from '@/lib/timezone';
 
 type Service = { id: string; name: string; price: number; duration: number };
 type Appointment = {
@@ -23,11 +29,12 @@ type Appointment = {
 };
 
 type Reminder = {
-  id: string;
+  id: string; // appointmentId
   clientName: string;
   clientPhone: string;
-  whatsappUrl: string;
-  sent: boolean;
+  date: string; // instante UTC de la cita
+  services: { name: string }[];
+  reminderSent: boolean;
 };
 
 export default function AdminDashboard() {
@@ -55,7 +62,7 @@ export default function AdminDashboard() {
     fetch('/api/admin/reminders')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled && data) setReminders(data);
+        if (!cancelled && Array.isArray(data)) setReminders(data);
       })
       .catch(() => {});
 
@@ -64,14 +71,36 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const markReminderSent = async (id: string) => {
+  const markReminderSent = useCallback(async (appointmentId: string) => {
+    setReminders(prev =>
+      prev.map(r => (r.id === appointmentId ? { ...r, reminderSent: true } : r))
+    );
     await fetch('/api/admin/reminders', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ appointmentId }),
+    }).catch(() => {});
+  }, []);
+
+  // Abre WhatsApp con el recordatorio listo y lo marca como enviado.
+  const sendReminder = useCallback((r: Reminder) => {
+    const url = buildReminderUrl(r.clientPhone, {
+      clientName: r.clientName,
+      date: r.date,
+      serviceNames: r.services.map(s => s.name),
     });
-    setReminders(prev => prev.map(r => r.id === id ? { ...r, sent: true } : r));
-  };
+    window.open(url, '_blank', 'noopener,noreferrer');
+    markReminderSent(r.id);
+  }, [markReminderSent]);
+
+  const pendingReminders = reminders.filter(r => !r.reminderSent);
+
+  // "Enviar todos": WhatsApp solo permite abrir un chat por gesto del usuario,
+  // así que enviamos de uno en uno (un toque abre el siguiente pendiente).
+  const sendNextReminder = useCallback(() => {
+    const next = reminders.find(r => !r.reminderSent);
+    if (next) sendReminder(next);
+  }, [reminders, sendReminder]);
 
   const filteredAppointments = appointments.filter(app => {
     const appDate = new Date(app.endDate);
@@ -142,25 +171,49 @@ export default function AdminDashboard() {
 
         <MetricsDashboard />
 
-        {/* RECORDATORIOS — tareas de hoy */}
+        {/* RECORDATORIOS — citas de mañana */}
         {reminders.length > 0 && (
           <div className="bg-salon-yellow/10 border border-salon-yellow/40 rounded-3xl p-5 mb-6 shadow-sm">
-            <h2 className="text-xs font-black text-salon-brown uppercase tracking-widest mb-3">
-              Recordatorios para mañana ({reminders.length})
-            </h2>
+            <div className="flex items-center justify-between mb-3 gap-3">
+              <h2 className="text-xs font-black text-salon-brown uppercase tracking-widest">
+                Recordatorios para mañana ({reminders.length})
+              </h2>
+              {pendingReminders.length > 0 && (
+                <button
+                  onClick={sendNextReminder}
+                  className="flex items-center gap-2 px-4 py-2 bg-salon-brown text-salon-yellow rounded-xl text-[11px] font-black uppercase tracking-wider transition-transform hover:scale-[1.03] active:scale-[0.97] shadow-sm shrink-0"
+                >
+                  <WhatsAppIcon className="w-3.5 h-3.5" />
+                  Enviar todos ({pendingReminders.length})
+                </button>
+              )}
+            </div>
+
+            <p className="text-[10px] text-salon-gray font-bold mb-3">
+              Se abre WhatsApp con el mensaje listo; solo confirma el envío. &quot;Enviar todos&quot; abre uno a la vez.
+            </p>
+
             <div className="space-y-2">
               {reminders.map((r) => (
-                <div key={r.id} className={`flex items-center justify-between bg-white rounded-2xl px-4 py-3 border transition-all shadow-sm hover:shadow-md ${r.sent ? 'opacity-50 border-gray-100' : 'border-salon-yellow/30'}`}>
-                  <div>
-                    <span className="font-black text-salon-brown text-sm">{r.clientName}</span>
-                    <span className="text-salon-gray text-xs ml-2">...{r.clientPhone.slice(-4)}</span>
+                <div key={r.id} className={`flex items-center justify-between bg-white rounded-2xl px-4 py-3 border transition-all shadow-sm hover:shadow-md ${r.reminderSent ? 'opacity-50 border-gray-100' : 'border-salon-yellow/30'}`}>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-salon-brown text-sm truncate">{r.clientName}</span>
+                      <span className="text-[10px] font-black text-salon-terracotta bg-salon-terracotta/10 px-2 py-0.5 rounded-full shrink-0">
+                        {formatChihuahuaTime(new Date(r.date))}
+                      </span>
+                    </div>
+                    <span className="text-salon-gray text-[10px] font-bold truncate block">
+                      {r.services.map(s => s.name).join(', ')}
+                    </span>
                   </div>
-                  {!r.sent ? (
-                    <a href={r.whatsappUrl} target="_blank" rel="noopener noreferrer" onClick={() => markReminderSent(r.id)} className="flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-xl text-xs font-bold uppercase transition-transform hover:scale-[1.05] active:scale-[0.95] shadow-sm">
+                  {!r.reminderSent ? (
+                    <button onClick={() => sendReminder(r)} className="flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-xl text-xs font-bold uppercase transition-transform hover:scale-[1.05] active:scale-[0.95] shadow-sm shrink-0 ml-3">
+                      <WhatsAppIcon className="w-3.5 h-3.5" />
                       Enviar
-                    </a>
+                    </button>
                   ) : (
-                    <span className="text-xs text-gray-400 font-bold uppercase">Enviado</span>
+                    <span className="text-xs text-gray-400 font-bold uppercase shrink-0 ml-3">Enviado</span>
                   )}
                 </div>
               ))}
@@ -195,7 +248,8 @@ export default function AdminDashboard() {
           ) : (
             filteredAppointments.map((app) => {
               const price = app.finalPrice ?? app.services.reduce((a, s) => a + s.price, 0);
-              const dateKey = format(new Date(app.date), 'yyyy-MM-dd');
+              const apptDate = new Date(app.date);
+              const dateKey = chihuahuaDateKey(apptDate);
               return (
                 <a
                   key={app.id}
@@ -205,8 +259,8 @@ export default function AdminDashboard() {
                   }`}
                 >
                   <div className="w-14 h-14 rounded-xl flex flex-col items-center justify-center font-bold border-2 border-salon-olive/20 bg-salon-bg text-salon-brown shrink-0">
-                    <span className="text-[9px] uppercase tracking-wider">{format(new Date(app.date), 'MMM', { locale: es })}</span>
-                    <span className="text-xl font-black">{format(new Date(app.date), 'd')}</span>
+                    <span className="text-[9px] uppercase tracking-wider">{formatChihuahuaMonthShort(apptDate)}</span>
+                    <span className="text-xl font-black">{getChihuahuaParts(apptDate).day}</span>
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -215,7 +269,7 @@ export default function AdminDashboard() {
                       <span className="text-sm font-black text-salon-brown shrink-0">${price}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-salon-terracotta font-bold">{format(new Date(app.date), 'HH:mm')}</span>
+                      <span className="text-[10px] text-salon-terracotta font-bold">{formatChihuahuaTime(apptDate)}</span>
                       <span className="text-[10px] text-salon-gray">·</span>
                       <span className="text-[10px] text-salon-gray font-bold truncate">
                         {app.services.map(s => s.name).join(', ')}

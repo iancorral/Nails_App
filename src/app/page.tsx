@@ -7,6 +7,7 @@ import MuralDecorations from '@/components/layout/MuralDecorations';
 import { CategoryAccordion } from '@/components/bookings/ServiceCard';
 import BookingCalendar from '@/components/bookings/BookingCalendar';
 import ClientForm from '@/components/bookings/ClientForm';
+import { buildClientBookingRequestMessage, buildWhatsAppUrl } from '@/lib/whatsapp';
 
 export default function Home() {
   const [services, setServices] = useState<Service[]>([]);
@@ -84,15 +85,16 @@ export default function Home() {
   // --- PANTALLA DE ÉXITO (CORREGIDA: MENSAJE SIN EMOJIS) ---
   if (bookingSuccess && bookingDate) {
     const dateStr = bookingDate.date.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
-    const timeStr = bookingDate.time;
-    const servicesStr = selectedServices.map(s => s.name).join(', ');
-    const salonPhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER; 
+    const salonPhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
 
-    // CORRECCIÓN AQUÍ: Usamos etiquetas de texto puro (FECHA:, SERVICIOS:) en lugar de emojis.
-    // Esto evita los signos de interrogación y se ve más elegante.
-    const message = `HOLA TANGIBLE.\n\nSoy *una clienta nueva* (reservé en la web).\n\nFECHA: ${dateStr} a las ${timeStr}\nSERVICIOS: ${servicesStr}\nDURACIÓN: ${totalDuration} min\n\n¿Queda confirmada mi cita?`;
-    
-    const whatsappUrl = `https://wa.me/${salonPhone}?text=${encodeURIComponent(message)}`;
+    const message = buildClientBookingRequestMessage({
+      dateLabel: dateStr,
+      timeLabel: bookingDate.time,
+      serviceNames: selectedServices.map(s => s.name),
+      durationMinutes: totalDuration,
+    });
+
+    const whatsappUrl = buildWhatsAppUrl(salonPhone, message);
 
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">

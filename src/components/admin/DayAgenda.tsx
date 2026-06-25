@@ -8,6 +8,7 @@ import {
 } from "@/lib/timezone";
 import WhatsAppIcon from "@/components/icons/WhatsAppIcon";
 import { METHOD_LABELS } from "@/components/admin/PaymentBadge";
+import { normalizeWhatsappPhone } from "@/lib/whatsapp";
 
 type Service = { id: string; name: string; price: number; duration: number; category: string };
 
@@ -112,6 +113,7 @@ export default function DayAgenda({
         <AppointmentCard
           key={`app-${app.id}`}
           app={app}
+          past={isPast}
           isMoving={moveModeId === app.id}
           dimmed={moveModeId !== null && moveModeId !== app.id}
           onClick={() => onAppointmentClick(app)}
@@ -132,43 +134,43 @@ export default function DayAgenda({
       <button
         key={`slot-${t}`}
         onClick={() => {
-          if (isPast) return;
           if (isDropTarget) onDropMove(label);
           else onSlotClick(label);
         }}
-        disabled={isPast}
         className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl border transition-all text-left group ${
-          isPast
-            ? "border-gray-100 border-dashed cursor-not-allowed"
-            : isDropTarget
+          isDropTarget
             ? "border-2 border-dashed border-blue-400 bg-blue-50 hover:bg-blue-100"
+            : isPast
+            ? "border-dashed border-gray-200 hover:border-salon-gray/40 hover:bg-gray-50"
             : "border-dashed border-salon-gray/15 hover:border-salon-olive hover:bg-salon-olive/5"
         }`}
       >
         <span className={`text-[11px] font-black uppercase tracking-wider w-12 shrink-0 ${
-          isPast
-            ? "text-gray-300"
-            : isDropTarget
+          isDropTarget
             ? "text-blue-600"
+            : isPast
+            ? "text-gray-300"
             : !inPublicHours
             ? "text-salon-gray/40"
             : "text-salon-gray"
         }`}>
           {label}
         </span>
-        {!isPast && (
-          <span className={`text-[10px] font-bold transition-opacity ${
-            isDropTarget
-              ? "text-blue-600"
-              : "text-salon-olive opacity-0 group-hover:opacity-100"
-          }`}>
-            {isDropTarget
-              ? "Soltar aquí"
-              : !inPublicHours
-              ? "+ Agregar (fuera de horario)"
-              : "+ Agregar cita"}
-          </span>
-        )}
+        <span className={`text-[10px] font-bold transition-opacity opacity-0 group-hover:opacity-100 ${
+          isDropTarget
+            ? "text-blue-600"
+            : isPast
+            ? "text-salon-gray/60"
+            : "text-salon-olive"
+        }`}>
+          {isDropTarget
+            ? "Soltar aquí"
+            : isPast
+            ? "+ Registrar cita pasada"
+            : !inPublicHours
+            ? "+ Agregar (fuera de horario)"
+            : "+ Agregar cita"}
+        </span>
       </button>
     );
 
@@ -216,6 +218,7 @@ export default function DayAgenda({
             <AppointmentCard
               key={`extra-${app.id}`}
               app={app}
+              past={isPast}
               isMoving={moveModeId === app.id}
               dimmed={moveModeId !== null && moveModeId !== app.id}
               onClick={() => onAppointmentClick(app)}
@@ -231,9 +234,10 @@ export default function DayAgenda({
 }
 
 function AppointmentCard({
-  app, isMoving, dimmed, onClick, onPaymentClick, onMoveClick, onCancelMove,
+  app, past, isMoving, dimmed, onClick, onPaymentClick, onMoveClick, onCancelMove,
 }: {
   app: AgendaAppointment;
+  past: boolean;
   isMoving: boolean;
   dimmed: boolean;
   onClick: () => void;
@@ -249,8 +253,14 @@ function AppointmentCard({
   const payment    = PAYMENT_META[app.paymentStatus] ?? PAYMENT_META.PENDING;
   const price      = app.finalPrice ?? app.services.reduce((a, s) => a + s.price, 0);
 
+  // Las citas pasadas se muestran atenuadas (registro histórico), conservando
+  // los botones funcionales para poder ajustar pago/notas a posteriori.
+  const cardClasses = past
+    ? "bg-gray-50 border-gray-200 text-gray-500 opacity-75"
+    : payment.classes;
+
   return (
-    <div className={`w-full rounded-2xl border-2 p-3 transition-all ${payment.classes} ${
+    <div className={`w-full rounded-2xl border-2 p-3 transition-all ${cardClasses} ${
       isMoving ? "ring-2 ring-blue-400 ring-offset-2" : ""
     } ${dimmed ? "opacity-40 pointer-events-none" : ""}`}>
       <button onClick={onClick} className="w-full text-left">
@@ -297,7 +307,7 @@ function AppointmentCard({
         {/* WhatsApp */}
 
         <a
-          href={`https://wa.me/${app.clientPhone.replace(/\D/g, "")}`}
+          href={`https://wa.me/${normalizeWhatsappPhone(app.clientPhone)}`}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
