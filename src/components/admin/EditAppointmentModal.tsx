@@ -13,7 +13,7 @@ type Service = {
 interface AppointmentData {
   id: string;
   clientName: string;
-  clientPhone: string;
+  clientPhone: string | null;
   adminNotes?: string | null;
   services: Service[];
   finalPrice?: number | null;
@@ -25,7 +25,7 @@ interface Props {
   onUpdated: (data: {
     services: Service[];
     clientName: string;
-    clientPhone: string;
+    clientPhone: string | null;
     adminNotes?: string | null;
     finalPrice?: number | null;
   }) => void;
@@ -36,7 +36,7 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
 
   // Paso 1: Clienta
   const [clientName,  setClientName]  = useState(appointment.clientName);
-  const [clientPhone, setClientPhone] = useState(appointment.clientPhone);
+  const [clientPhone, setClientPhone] = useState(appointment.clientPhone ?? "");
   const [adminNotes,  setAdminNotes]  = useState(appointment.adminNotes ?? "");
   const [finalPrice,  setFinalPrice]  = useState(
     appointment.finalPrice != null ? String(appointment.finalPrice) : ""
@@ -66,8 +66,8 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
   };
 
   const handleSubmit = async () => {
-    if (!clientName || !clientPhone || selectedServiceIds.length === 0) {
-      setError("Completa nombre, teléfono y al menos un servicio.");
+    if (!clientName || selectedServiceIds.length === 0) {
+      setError("Completa el nombre y al menos un servicio.");
       return;
     }
 
@@ -158,7 +158,8 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
 
               <div>
                 <label className="block text-[10px] font-bold text-salon-terracotta uppercase tracking-widest mb-2">
-                  Teléfono *
+                  Teléfono{" "}
+                  <span className="text-salon-gray normal-case tracking-normal font-medium">(opcional)</span>
                 </label>
                 <input
                   type="tel"
@@ -166,6 +167,9 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
                   onChange={(e) => setClientPhone(e.target.value)}
                   className="w-full border-2 border-salon-gray/30 rounded-xl px-4 py-3 text-salon-brown font-medium focus:border-salon-olive outline-none"
                 />
+                <p className="text-[10px] text-salon-gray mt-1">
+                  Vacío = sin WhatsApp para esta cita.
+                </p>
               </div>
 
               <div>
@@ -198,7 +202,7 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
 
               <button
                 onClick={() => setStep(2)}
-                disabled={!clientName || !clientPhone}
+                disabled={!clientName}
                 className="w-full py-3 bg-salon-olive text-white font-black text-xs uppercase tracking-widest rounded-2xl disabled:opacity-40 hover:bg-salon-olive/90 transition-all"
               >
                 Siguiente → Servicios

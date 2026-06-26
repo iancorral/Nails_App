@@ -50,26 +50,26 @@ function appointmentLines(a: AppointmentMessageData): string[] {
 /** Mensaje de confirmación al crear la cita desde el panel (negocio → clienta). */
 export function buildConfirmationMessage(a: AppointmentMessageData): string {
   return [
-    `Hola ${firstName(a.clientName)}, te escribimos de ${BUSINESS_NAME}.`,
+    `Hola ${firstName(a.clientName)}, te escribo de ${BUSINESS_NAME}.`,
     ``,
     `Tu cita ha quedado agendada:`,
     ``,
     ...appointmentLines(a),
     ``,
-    `Si necesitas reagendar o cancelar, contáctanos por este medio. ¡Te esperamos!`,
+    `Si necesitas reagendar o cancelar, mandame mensaje ¡Te espero!`,
   ].join("\n");
 }
 
 /** Mensaje de recordatorio, un día antes de la cita (negocio → clienta). */
 export function buildReminderMessage(a: AppointmentMessageData): string {
   return [
-    `Hola ${firstName(a.clientName)}, te escribimos de ${BUSINESS_NAME}.`,
+    `Hola ${firstName(a.clientName)}!`,
     ``,
-    `Te recordamos que mañana tienes cita:`,
+    `Para recordarte que mañana tienes cita:`,
     ``,
     ...appointmentLines(a),
     ``,
-    `¿Nos confirmas tu asistencia? Responde *Sí* para confirmar o escríbenos si necesitas reagendar. ¡Te esperamos!`,
+    `¿Me confirmas tu asistencia? Responde *Sí* para confirmar o escríbeme si necesitas reagendar. ¡Te espero!`,
   ].join("\n");
 }
 

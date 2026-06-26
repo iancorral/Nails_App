@@ -11,9 +11,12 @@ const createSchema = z.object({
     .min(2)
     .max(100)
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ.''\-\s]+$/, "Nombre contiene caracteres no permitidos"),
+  // Opcional: permite dejar la cita sin teléfono (vacío = se limpia a null).
   clientPhone: z
     .string()
-    .regex(/^[\d\s\-().+]{7,20}$/, "Teléfono inválido"),
+    .regex(/^[\d\s\-().+]{7,20}$/, "Teléfono inválido")
+    .optional()
+    .or(z.literal("")),
   serviceIds: z
     .array(z.string().regex(/^[a-f\d]{24}$/i))
     .min(1)
@@ -93,7 +96,12 @@ export async function PATCH(
       endDate,
     };
     if (data.clientName) updateData.clientName = data.clientName;
-    if (data.clientPhone) updateData.clientPhone = data.clientPhone;
+    // Si el campo viene en la petición (aunque sea vacío) se actualiza:
+    // vacío → null para poder quitar el teléfono de una cita existente.
+    if (data.clientPhone !== undefined) {
+      updateData.clientPhone =
+        data.clientPhone && data.clientPhone.trim() ? data.clientPhone.trim() : null;
+    }
     if (data.adminNotes !== undefined) updateData.adminNotes = data.adminNotes;
     if (serviceConnect) {
       updateData.services = { set: serviceConnect };

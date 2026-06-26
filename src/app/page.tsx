@@ -110,7 +110,7 @@ export default function Home() {
               </svg>
             </div>
             
-            <h1 className="text-2xl font-black text-salon-black mb-2 uppercase tracking-wider">¡Cita Apartada!</h1>
+            <h1 className="font-title text-2xl font-black text-salon-black mb-2 uppercase tracking-wider">¡Cita Apartada!</h1>
             <p className="text-salon-gray mb-6 text-xs font-bold uppercase tracking-widest leading-relaxed">
               Para finalizar, es necesario enviar el mensaje de confirmación.
             </p>
@@ -155,7 +155,7 @@ export default function Home() {
             />
           </div>
           
-          <h1 className="text-2xl font-black text-salon-brown tracking-[0.3em] uppercase mb-2">
+          <h1 className="font-title text-3xl font-black text-salon-brown tracking-[0.3em] uppercase mb-2">
             TANGIBLE
           </h1>
           {/* Separadores sin emojis */}

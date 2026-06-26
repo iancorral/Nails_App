@@ -17,7 +17,7 @@ export type AgendaAppointment = {
   date: string | Date;
   endDate: string | Date;
   clientName: string;
-  clientPhone: string;
+  clientPhone: string | null;
   status: string;
   paymentStatus: string;
   paymentMethod?: string | null;
@@ -304,17 +304,18 @@ function AppointmentCard({
           {isMoving ? "✕ Cancelar" : "↕ Mover"}
         </button>
 
-        {/* WhatsApp */}
-
-        <a
-          href={`https://wa.me/${normalizeWhatsappPhone(app.clientPhone)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="ml-auto w-7 h-7 bg-[#25D366] rounded-lg flex items-center justify-center hover:scale-110 transition-all shrink-0"
-        >
-          <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
-        </a>
+        {/* WhatsApp — solo si la cita tiene teléfono */}
+        {app.clientPhone && (
+          <a
+            href={`https://wa.me/${normalizeWhatsappPhone(app.clientPhone)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="ml-auto w-7 h-7 bg-[#25D366] rounded-lg flex items-center justify-center hover:scale-110 transition-all shrink-0"
+          >
+            <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
+          </a>
+        )}
       </div>
     </div>
   );

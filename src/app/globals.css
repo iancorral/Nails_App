@@ -2,6 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Tipografía autohospedada.
+  - Century Gothic: cuerpo de la interfaz (texto, botones, formularios, tarjetas,
+    navegación y encabezados de sección como "Resumen" o "Recordatorios").
+  - Boston Angel: marca + títulos principales de página (H1: "Panel de Control",
+    "Calendario", "Ingresos"…) y héroes display (wordmark "Tangible", landing,
+    "¡Cita Apartada!"). Utilidad .font-title.
+    NO usar en sub-encabezados de sección: ahí manda la legibilidad.
+
+  src usa primero local() (si la fuente está instalada en el equipo) y luego el
+  archivo autohospedado en /public/fonts. Si el archivo aún no existe, el navegador
+  ignora el @font-face y se usa el fallback definido en tailwind.config.js, por lo
+  que la app nunca se rompe. Coloca los archivos .woff2 en public/fonts/ (ver
+  public/fonts/README.md) para activarlas en todos los dispositivos.
+*/
+/* Century Gothic — peso normal (400). */
+@font-face {
+  font-family: "Century Gothic";
+  src: local("Century Gothic"), local("CenturyGothic"),
+    url("/fonts/CenturyGothic.woff2") format("woff2");
+  font-weight: 400 500;
+  font-display: swap;
+}
+
+/* Century Gothic — peso bold real (cubre 600–900 para que font-bold y
+   font-black usen el archivo bold y NO un "bold sintético" del navegador). */
+@font-face {
+  font-family: "Century Gothic";
+  src: local("Century Gothic Bold"), local("CenturyGothic-Bold"),
+    url("/fonts/CenturyGothic-Bold.woff") format("woff");
+  font-weight: 600 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Boston Angel";
+  src: local("Boston Angel"), url("/fonts/BostonAngel.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
 :root {
   --color-salon-bg: #FAF7F2;
   --color-salon-brown: #2C1F0E;

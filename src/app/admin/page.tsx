@@ -19,7 +19,7 @@ type Appointment = {
   date: string | Date;
   endDate: string | Date;
   clientName: string;
-  clientPhone: string;
+  clientPhone: string | null;
   status: string;
   services: Service[];
   paymentStatus: string;
@@ -71,36 +71,52 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const markReminderSent = useCallback(async (appointmentId: string) => {
+  // Recordatorios que ya se abrieron en WhatsApp en esta sesión (estado local).
+  // No se persiste: abrir el chat NO implica que el mensaje se haya enviado, eso
+  // solo lo sabe la admin tras pulsar "Enviar" dentro de WhatsApp.
+  const [openedIds, setOpenedIds] = useState<Set<string>>(new Set());
+
+  // Persiste el estado "enviado" (o lo deshace) en la bitácora.
+  const setReminderSent = useCallback(async (appointmentId: string, sent: boolean) => {
     setReminders(prev =>
-      prev.map(r => (r.id === appointmentId ? { ...r, reminderSent: true } : r))
+      prev.map(r => (r.id === appointmentId ? { ...r, reminderSent: sent } : r))
     );
     await fetch('/api/admin/reminders', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ appointmentId }),
+      body: JSON.stringify({ appointmentId, sent }),
     }).catch(() => {});
   }, []);
 
-  // Abre WhatsApp con el recordatorio listo y lo marca como enviado.
-  const sendReminder = useCallback((r: Reminder) => {
+  // Abre WhatsApp con el recordatorio listo. NO lo marca como enviado: el envío
+  // real ocurre dentro de WhatsApp y la app no puede saber si se completó.
+  const openReminder = useCallback((r: Reminder) => {
     const url = buildReminderUrl(r.clientPhone, {
       clientName: r.clientName,
       date: r.date,
       serviceNames: r.services.map(s => s.name),
     });
     window.open(url, '_blank', 'noopener,noreferrer');
-    markReminderSent(r.id);
-  }, [markReminderSent]);
+    setOpenedIds(prev => new Set(prev).add(r.id));
+  }, []);
 
-  const pendingReminders = reminders.filter(r => !r.reminderSent);
+  const undoSent = useCallback((appointmentId: string) => {
+    setOpenedIds(prev => {
+      const next = new Set(prev);
+      next.delete(appointmentId);
+      return next;
+    });
+    setReminderSent(appointmentId, false);
+  }, [setReminderSent]);
 
-  // "Enviar todos": WhatsApp solo permite abrir un chat por gesto del usuario,
-  // así que enviamos de uno en uno (un toque abre el siguiente pendiente).
-  const sendNextReminder = useCallback(() => {
-    const next = reminders.find(r => !r.reminderSent);
-    if (next) sendReminder(next);
-  }, [reminders, sendReminder]);
+  // "Abrir siguiente": WhatsApp solo permite abrir un chat por gesto del usuario.
+  // Abre el siguiente recordatorio que aún no se ha abierto ni marcado como enviado.
+  const openNextReminder = useCallback(() => {
+    const next = reminders.find(r => !r.reminderSent && !openedIds.has(r.id));
+    if (next) openReminder(next);
+  }, [reminders, openedIds, openReminder]);
+
+  const unopenedCount = reminders.filter(r => !r.reminderSent && !openedIds.has(r.id)).length;
 
   const filteredAppointments = appointments.filter(app => {
     const appDate = new Date(app.endDate);
@@ -120,7 +136,7 @@ export default function AdminDashboard() {
         {/* HEADER */}
         <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
           <div>
-            <h1 className="text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
+            <h1 className="font-title text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
               Panel de Control
             </h1>
             <div className="flex items-center gap-3 opacity-70">
@@ -162,7 +178,7 @@ export default function AdminDashboard() {
             </a>
             <button onClick={() => window.location.reload()} className="group flex flex-col items-center bg-white px-6 py-3 border-2 border-salon-olive/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
               <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">Total Citas</span>
-              <span className="text-2xl font-black text-salon-olive group-hover:text-salon-terracotta transition-colors">
+              <span className="text-3xl font-black text-salon-olive group-hover:text-salon-terracotta transition-colors">
                 {appointments.length}
               </span>
             </button>
@@ -178,45 +194,76 @@ export default function AdminDashboard() {
               <h2 className="text-xs font-black text-salon-brown uppercase tracking-widest">
                 Recordatorios para mañana ({reminders.length})
               </h2>
-              {pendingReminders.length > 0 && (
+              {unopenedCount > 0 && (
                 <button
-                  onClick={sendNextReminder}
+                  onClick={openNextReminder}
                   className="flex items-center gap-2 px-4 py-2 bg-salon-brown text-salon-yellow rounded-xl text-[11px] font-black uppercase tracking-wider transition-transform hover:scale-[1.03] active:scale-[0.97] shadow-sm shrink-0"
                 >
                   <WhatsAppIcon className="w-3.5 h-3.5" />
-                  Enviar todos ({pendingReminders.length})
+                  Abrir siguiente ({unopenedCount})
                 </button>
               )}
             </div>
 
             <p className="text-[10px] text-salon-gray font-bold mb-3">
-              Se abre WhatsApp con el mensaje listo; solo confirma el envío. &quot;Enviar todos&quot; abre uno a la vez.
+              Se abre WhatsApp con el mensaje listo. Al volver, confirma el envío con &quot;Ya lo envié&quot;
+              (la app no puede saber por sí sola si el mensaje se mandó).
             </p>
 
             <div className="space-y-2">
-              {reminders.map((r) => (
-                <div key={r.id} className={`flex items-center justify-between bg-white rounded-2xl px-4 py-3 border transition-all shadow-sm hover:shadow-md ${r.reminderSent ? 'opacity-50 border-gray-100' : 'border-salon-yellow/30'}`}>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-salon-brown text-sm truncate">{r.clientName}</span>
-                      <span className="text-[10px] font-black text-salon-terracotta bg-salon-terracotta/10 px-2 py-0.5 rounded-full shrink-0">
-                        {formatChihuahuaTime(new Date(r.date))}
+              {reminders.map((r) => {
+                const opened = openedIds.has(r.id);
+                return (
+                  <div key={r.id} className={`flex items-center justify-between bg-white rounded-2xl px-4 py-3 border transition-all shadow-sm hover:shadow-md ${r.reminderSent ? 'opacity-50 border-gray-100' : opened ? 'border-salon-olive/40' : 'border-salon-yellow/30'}`}>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-salon-brown text-sm truncate">{r.clientName}</span>
+                        <span className="text-[10px] font-black text-salon-terracotta bg-salon-terracotta/10 px-2 py-0.5 rounded-full shrink-0">
+                          {formatChihuahuaTime(new Date(r.date))}
+                        </span>
+                      </div>
+                      <span className="text-salon-gray text-[10px] font-bold truncate block">
+                        {r.services.map(s => s.name).join(', ')}
                       </span>
                     </div>
-                    <span className="text-salon-gray text-[10px] font-bold truncate block">
-                      {r.services.map(s => s.name).join(', ')}
-                    </span>
+
+                    {r.reminderSent ? (
+                      // Estado final: enviado. Permite deshacer si se marcó por error.
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        <span className="text-xs text-gray-400 font-bold uppercase">Enviado</span>
+                        <button
+                          onClick={() => undoSent(r.id)}
+                          className="text-[10px] text-salon-gray/70 font-bold uppercase underline hover:text-salon-terracotta"
+                        >
+                          Deshacer
+                        </button>
+                      </div>
+                    ) : opened ? (
+                      // Se abrió WhatsApp: la admin confirma manualmente el envío real.
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        <button
+                          onClick={() => openReminder(r)}
+                          className="text-[10px] text-salon-gray font-bold uppercase underline hover:text-salon-brown"
+                        >
+                          Reabrir
+                        </button>
+                        <button
+                          onClick={() => setReminderSent(r.id, true)}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-salon-olive text-white rounded-xl text-xs font-bold uppercase transition-transform hover:scale-[1.05] active:scale-[0.95] shadow-sm"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg>
+                          Ya lo envié
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => openReminder(r)} className="flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-xl text-xs font-bold uppercase transition-transform hover:scale-[1.05] active:scale-[0.95] shadow-sm shrink-0 ml-3">
+                        <WhatsAppIcon className="w-3.5 h-3.5" />
+                        Enviar
+                      </button>
+                    )}
                   </div>
-                  {!r.reminderSent ? (
-                    <button onClick={() => sendReminder(r)} className="flex items-center gap-2 px-4 py-2 bg-[#25D366] text-white rounded-xl text-xs font-bold uppercase transition-transform hover:scale-[1.05] active:scale-[0.95] shadow-sm shrink-0 ml-3">
-                      <WhatsAppIcon className="w-3.5 h-3.5" />
-                      Enviar
-                    </button>
-                  ) : (
-                    <span className="text-xs text-gray-400 font-bold uppercase shrink-0 ml-3">Enviado</span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

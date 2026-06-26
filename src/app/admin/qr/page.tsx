@@ -44,7 +44,7 @@ export default function QRPage() {
           <a href="/admin" className="text-xs text-salon-gray font-bold uppercase tracking-wider hover:text-salon-brown mb-4 block">
             ← Volver al panel
           </a>
-          <h1 className="text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
+          <h1 className="font-title text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
             QR Code
           </h1>
           <div className="flex items-center gap-3 opacity-70">
@@ -74,7 +74,7 @@ export default function QRPage() {
             </div>
           </div>
 
-          <h2 className="text-2xl font-black text-salon-brown tracking-[0.2em] uppercase mb-1">
+          <h2 className="font-title text-2xl font-black text-salon-brown tracking-[0.2em] uppercase mb-1">
             TANGIBLE
           </h2>
           <p className="text-[10px] text-salon-terracotta font-bold uppercase tracking-widest">
