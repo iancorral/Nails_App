@@ -57,42 +57,42 @@ export default function MetricsDashboard() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-3xl border-2 border-salon-olive/10 p-5 animate-pulse h-28" />
+            <div key={i} className="bg-white rounded-3xl border-2 border-salon-olive/10 p-4 md:p-5 animate-pulse h-24 md:h-28" />
           ))}
         </div>
       ) : metrics ? (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {/* Ingresos — clickable, links to revenue detail */}
             <a
               href={`/admin/revenue?period=${period}`}
-              className="bg-white rounded-3xl border-2 border-salon-olive/20 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group block"
+              className="bg-white rounded-3xl border-2 border-salon-olive/20 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group block"
             >
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Ingresos</p>
-              <p className="text-3xl font-black text-salon-olive">${metrics.revenue.toLocaleString()}</p>
+              <p className="text-2xl md:text-3xl font-black text-salon-olive">${metrics.revenue.toLocaleString()}</p>
               <p className="text-[10px] text-salon-olive/60 mt-1 font-bold group-hover:text-salon-olive transition-colors">
                 ver desglose →
               </p>
             </a>
 
             {/* Citas confirmadas */}
-            <div className="bg-white rounded-3xl border-2 border-salon-brown/20 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
+            <div className="bg-white rounded-3xl border-2 border-salon-brown/20 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Citas</p>
-              <p className="text-3xl font-black text-salon-brown">{metrics.totalConfirmed}</p>
+              <p className="text-2xl md:text-3xl font-black text-salon-brown">{metrics.totalConfirmed}</p>
               <p className="text-[10px] text-salon-gray mt-1 font-medium">confirmadas</p>
             </div>
 
             {/* Cancelaciones */}
-            <div className="bg-white rounded-3xl border-2 border-salon-terracotta/20 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
+            <div className="bg-white rounded-3xl border-2 border-salon-terracotta/20 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Canceladas</p>
-              <p className="text-3xl font-black text-salon-terracotta">{metrics.cancellationRate}%</p>
+              <p className="text-2xl md:text-3xl font-black text-salon-terracotta">{metrics.cancellationRate}%</p>
               <p className="text-[10px] text-salon-gray mt-1 font-medium">{metrics.totalCancelled} citas</p>
             </div>
 
             {/* Servicio top */}
-            <div className="bg-white rounded-3xl border-2 border-salon-lavender/30 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
+            <div className="bg-white rounded-3xl border-2 border-salon-lavender/30 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Top servicio</p>
               {metrics.topService ? (
                 <div className="flex flex-col justify-center h-full pb-3">

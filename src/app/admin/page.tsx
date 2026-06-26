@@ -136,7 +136,7 @@ export default function AdminDashboard() {
         {/* HEADER */}
         <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
           <div>
-            <h1 className="font-title text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
+            <h1 className="font-title text-2xl sm:text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
               Panel de Control
             </h1>
             <div className="flex items-center gap-3 opacity-70">
@@ -147,8 +147,11 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <a href="/admin/calendar" className="flex flex-col items-center bg-white px-6 py-3 border-2 border-salon-lavender/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
+          {/* Acciones rápidas: rejilla de 4 a ancho completo en móvil (tarjetas
+              alineadas y de igual altura), fila compacta alineada a la derecha en
+              escritorio (sin cambios respecto al diseño original). */}
+          <div className="grid grid-cols-4 gap-2 w-full md:flex md:w-auto md:gap-3">
+            <a href="/admin/calendar" className="flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-lavender/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
               <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">Agenda</span>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -157,7 +160,7 @@ export default function AdminDashboard() {
                 <line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
             </a>
-            <a href="/admin/qr" className="flex flex-col items-center bg-white px-6 py-3 border-2 border-salon-lavender/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
+            <a href="/admin/qr" className="flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-lavender/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
               <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">QR</span>
               <svg className="w-6 h-6 text-salon-lavender" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -169,16 +172,16 @@ export default function AdminDashboard() {
                 <rect x="18" y="18" width="3" height="3"/>
               </svg>
             </a>
-            <a href="/admin/schedule" className="flex flex-col items-center bg-white px-6 py-3 border-2 border-salon-terracotta/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
+            <a href="/admin/schedule" className="flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-terracotta/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
               <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">Horario</span>
               <svg className="w-6 h-6 text-salon-terracotta" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
             </a>
-            <button onClick={() => window.location.reload()} className="group flex flex-col items-center bg-white px-6 py-3 border-2 border-salon-olive/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
-              <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">Total Citas</span>
-              <span className="text-3xl font-black text-salon-olive group-hover:text-salon-terracotta transition-colors">
+            <button onClick={() => window.location.reload()} className="group flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-olive/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
+              <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1 text-center leading-tight">Total Citas</span>
+              <span className="text-2xl md:text-3xl font-black text-salon-olive group-hover:text-salon-terracotta transition-colors">
                 {appointments.length}
               </span>
             </button>
