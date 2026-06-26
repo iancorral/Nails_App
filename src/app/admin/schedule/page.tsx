@@ -168,7 +168,7 @@ export default function SchedulePage() {
           <a href="/admin" className="text-xs text-salon-gray font-bold uppercase tracking-wider hover:text-salon-brown mb-4 block">
             ← Volver al panel
           </a>
-          <h1 className="font-title text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
+          <h1 className="font-title text-2xl sm:text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
             Mi Horario
           </h1>
           <div className="flex items-center gap-3 opacity-70">
@@ -197,7 +197,7 @@ export default function SchedulePage() {
               {schedule.map((day) => (
                 <div
                   key={day.dayOfWeek}
-                  className={`flex flex-wrap items-center gap-2 p-3 rounded-xl border transition-all ${
+                  className={`flex items-center gap-2 p-2.5 sm:p-3 rounded-xl border transition-all ${
                     day.isDayOff ? "bg-gray-50 border-gray-200 opacity-60" : "bg-salon-bg border-salon-olive/20"
                   }`}
                 >
@@ -210,24 +210,26 @@ export default function SchedulePage() {
                     {day.isDayOff ? "✕" : "✓"}
                   </button>
 
-                  <span className={`font-black uppercase tracking-wide text-sm w-20 shrink-0 ${day.isDayOff ? "text-gray-400" : "text-salon-brown"}`}>
+                  <span className={`font-black uppercase tracking-wide text-[11px] sm:text-sm w-16 sm:w-20 shrink-0 ${day.isDayOff ? "text-gray-400" : "text-salon-brown"}`}>
                     {DAYS[day.dayOfWeek]}
                   </span>
 
                   {!day.isDayOff ? (
-                    <div className="flex items-center gap-1 flex-1 min-w-0">
+                    // Los inputs comparten el espacio disponible (flex-1) y se
+                    // encogen sin desbordar en pantallas estrechas.
+                    <div className="flex items-center gap-1.5 sm:gap-1 flex-1 min-w-0">
                       <input
                         type="time"
                         value={day.startTime}
                         onChange={(e) => updateDay(day.dayOfWeek, "startTime", e.target.value)}
-                        className="border-2 border-salon-olive/30 rounded-lg px-2 py-1 text-sm text-salon-brown font-bold focus:border-salon-olive outline-none bg-white w-full max-w-[110px]"
+                        className="border-2 border-salon-olive/30 rounded-lg px-2 py-1.5 sm:py-1 text-sm text-salon-brown font-bold focus:border-salon-olive outline-none bg-white flex-1 min-w-0 max-w-[130px] sm:max-w-[110px]"
                       />
                       <span className="text-salon-gray text-xs font-bold shrink-0">a</span>
                       <input
                         type="time"
                         value={day.endTime}
                         onChange={(e) => updateDay(day.dayOfWeek, "endTime", e.target.value)}
-                        className="border-2 border-salon-olive/30 rounded-lg px-2 py-1 text-sm text-salon-brown font-bold focus:border-salon-olive outline-none bg-white w-full max-w-[110px]"
+                        className="border-2 border-salon-olive/30 rounded-lg px-2 py-1.5 sm:py-1 text-sm text-salon-brown font-bold focus:border-salon-olive outline-none bg-white flex-1 min-w-0 max-w-[130px] sm:max-w-[110px]"
                       />
                     </div>
                   ) : (

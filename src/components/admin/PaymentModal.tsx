@@ -92,13 +92,13 @@ export default function PaymentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="relative z-10 bg-white w-full max-w-sm rounded-3xl border-2 border-salon-olive/20 shadow-xl p-6">
+      <div className="relative z-10 my-auto bg-white w-full max-w-sm rounded-3xl border-2 border-salon-olive/20 shadow-xl p-6">
         <div className="flex justify-between items-start mb-5">
           <div>
             <h3 className="font-black text-salon-brown uppercase tracking-wider">
