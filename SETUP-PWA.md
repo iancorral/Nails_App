@@ -1,132 +1,118 @@
-# Tangible — PWA setup & testing guide
+# Tangible — PWA setup, scoping & install guide
 
-The app is now an installable **Progressive Web App**: it can be added to the home
-screen on iPhone and Android and launches **full-screen (standalone)** — no browser
-address bar — under the name **Tangible**, using the existing logo as the icon.
+The **admin panel** is now an installable **Progressive Web App** named **Tangible**.
+The admin (your girlfriend) can add it to her iPhone/Android home screen and it
+launches **full-screen (standalone)** — no browser address bar — straight into the
+panel.
 
-This document explains what was added, where the icons live, how to regenerate
-them, how to test the install on each platform, and the known iOS limitations.
+**It is intentionally admin-only.** The public booking page that clients open from
+the Instagram link does **not** advertise the app and shows **no install prompt** —
+clients just use the website normally.
 
----
-
-## 1. What was added
-
-| File | Purpose |
-|------|---------|
-| `src/app/manifest.ts` | Web App Manifest. Next serves it at `/manifest.webmanifest` and injects the `<link rel="manifest">` automatically. Name, colors, icons, `display: standalone`. |
-| `src/app/layout.tsx` | PWA metadata: `theme-color`, Apple meta tags (`apple-mobile-web-app-*`), apple-touch-icon, favicons, and the iOS splash-screen `<link>` tags. |
-| `public/icons/` | All app icons (192/512 + maskable, apple-touch-icon 180, favicons). **Commit these.** |
-| `public/splash/` | iOS launch (splash) images, one per iPhone resolution. **Commit these.** |
-| `scripts/generate-pwa-icons.mjs` | Regenerates everything in `public/icons` and `public/splash` from the master logo. |
-
-The master logo lives at `public/logo-tangible.png` (2048×2048). Everything is
-generated from it, so the app icon **is** the existing logo, on the brand cream
-background (`#FAF7F2`).
-
-> Note: the logo file was renamed from `logo-tangible.PNG` → `logo-tangible.png`
-> (lowercase). On Linux/Vercel and on `next start`, asset paths are
-> case-sensitive, and the landing page references the lowercase path — the old
-> casing returned a 404 for the logo. It now matches everywhere.
+Production domain: **https://studiotangible.com.mx** (already set as
+`NEXT_PUBLIC_APP_URL`).
 
 ---
 
-## 2. Where the icons are and how to regenerate them
+## 1. How the admin-only scoping works
 
-You **do not** need to place any icons by hand — they are already generated and
-committed. You only regenerate when **the logo changes**.
+The "installable app" tags (manifest link, Apple standalone tags, iOS splash) are
+attached **only** to `/login` and `/admin/**` — never to the public landing page.
 
-To regenerate:
+| File | Role |
+|------|------|
+| `public/manifest.webmanifest` | The Web App Manifest (static file). `start_url: /admin`, name `Tangible`, `display: standalone`, brand colors, icons. Served at `/manifest.webmanifest`. |
+| `src/lib/pwa-metadata.ts` | Exports `adminPwaMetadata` (manifest link + Apple tags + iOS splash links). |
+| `src/app/admin/layout.tsx` | `export const metadata = adminPwaMetadata` → panel pages are installable. |
+| `src/app/login/layout.tsx` | Same metadata → the admin can install from the login screen. |
+| `src/app/layout.tsx` (root) | Only **global** metadata (title, favicons, `theme-color`). **No** manifest/Apple tags, so the public page is not installable. |
+
+> Why a static `public/manifest.webmanifest` instead of `app/manifest.ts`? Next's
+> file-based `app/manifest.ts` auto-injects the manifest `<link>` on **every** page,
+> which would expose the install prompt to clients. A static file is only linked
+> where we explicitly add it (admin + login).
+
+`start_url` is `/admin`, so the installed app opens the panel directly. If there's
+no active session, `/admin` redirects to `/login`; `scope` is `/` so that redirect
+stays inside the app.
+
+**No service worker** is included (no offline mode). It isn't needed for iOS
+standalone, and avoids any risk of showing stale appointment data. iPhone install is
+fully supported; on Android the app installs from the browser menu (see below).
+
+---
+
+## 2. Icons & splash (already generated)
+
+Everything is generated from `public/logo-tangible.png` (2048×2048) into:
+
+- `public/icons/` — `icon-192/512`, `icon-maskable-192/512`, `apple-touch-icon` (180), favicons.
+- `public/splash/` — iOS launch images for the common iPhones (portrait).
+
+**Commit both folders.** You only regenerate when the logo changes:
 
 ```bash
-# sharp is only needed to (re)generate images; it is NOT a runtime dependency
-npm install -D sharp
+npm install -D sharp          # dev-only, not a runtime dependency
 node scripts/generate-pwa-icons.mjs
 ```
 
-This overwrites `public/icons/*` and `public/splash/*`. Commit the result.
-
-If you swap the logo, save the new file as `public/logo-tangible.png`
-(square, ideally ≥ 1024×1024, transparent PNG) and re-run the command.
-
-Generated icons:
-
-- `icon-192.png`, `icon-512.png` — standard ("any") icons.
-- `icon-maskable-192.png`, `icon-maskable-512.png` — Android adaptive icons (logo on a cream background with safe-zone padding so it isn't clipped inside Android's circle/squircle mask).
-- `apple-touch-icon.png` (180×180) — iPhone home-screen icon (opaque background; iOS adds the rounded corners itself).
-- `favicon-16.png`, `favicon-32.png` — browser tab icons.
+> The logo file was renamed `logo-tangible.PNG` → `logo-tangible.png` (lowercase) so
+> asset paths match on case-sensitive hosting; the old casing 404'd the landing logo.
 
 ---
 
-## 3. Deployment checklist
+## 3. Deploy checklist (Hostinger)
 
-1. **Commit the generated folders** — `public/icons/` and `public/splash/` (and the
-   renamed `public/logo-tangible.png`). They are not git-ignored.
-2. **Serve over HTTPS.** PWAs only install over HTTPS (your `iotangible.com.mx`
-   domain already is). `localhost` also works for testing.
-3. **Set `NEXT_PUBLIC_APP_URL`** in your environment to the production URL
-   (e.g. `https://iotangible.com.mx`). It's used for `metadataBase` and the QR code.
-4. Deploy as usual (`npm run build` → `npm start`, or your Vercel pipeline).
-
-No `next.config.ts` changes were required: the existing Content-Security-Policy
-(`default-src 'self'`, `img-src 'self'`) already allows the manifest and icons.
+1. **Commit** `public/icons/`, `public/splash/`, `public/manifest.webmanifest`,
+   `public/logo-tangible.png`, `scripts/`, `src/lib/pwa-metadata.ts`, and the modified
+   files.
+2. Confirm `NEXT_PUBLIC_APP_URL=https://studiotangible.com.mx` in the server env.
+3. Serve over **HTTPS** (required for install — your domain already has SSL).
+4. Build & run the Node app: `npm run build` then `npm start`.
 
 ---
 
-## 4. How to test
+## 4. Instrucciones para instalar la app (para la administradora)
 
-### Android (Chrome)
-1. Open the site in Chrome.
-2. You should get an **"Install app" / "Add to Home screen"** prompt, or use
-   ⋮ menu → **Install app**.
-3. Launch it from the home screen → it opens **full-screen, no address bar**, with
-   the Tangible icon and a cream splash while loading.
-4. To audit: Chrome DevTools → **Application → Manifest** (check name, icons, and
-   "Installability"), and run **Lighthouse → PWA**.
+> La app es **solo para ti** (panel de administración). Las clientas siguen usando
+> el link normal de Instagram, ellas no instalan nada.
 
-### iPhone (Safari → Add to Home Screen)
-1. Open the site in **Safari** (this does **not** work in Chrome/other browsers on
-   iOS — see limitations).
-2. Tap **Share** (□↑) → **Add to Home Screen** → **Add**.
-3. The icon appears as **Tangible** with the logo.
-4. Open it → it launches **full-screen (standalone)**, with the cream splash screen
-   matching the device size while it loads.
+### En iPhone (Safari) — recomendado
+1. Abre **Safari** (tiene que ser Safari, no Chrome).
+2. Entra a **studiotangible.com.mx/login**
+3. Toca el botón **Compartir** (el cuadro con la flecha hacia arriba ⬆️, abajo en el centro).
+4. Desliza y toca **"Agregar a inicio"** (Add to Home Screen).
+5. Verás el nombre **Tangible** y el logo → toca **"Agregar"**.
+6. Cierra Safari y abre el ícono **Tangible** desde tu pantalla de inicio.
+7. La **primera vez**, inicia sesión con tu correo y contraseña dentro de la app.
+   Después se queda guardada y abre directo en el panel, en pantalla completa. ✅
 
-### Quick local check
-```bash
-npm run build && npm start
-# then open http://localhost:3000 and inspect the <head> /manifest.webmanifest
-```
+### En Android (Chrome)
+1. Abre **Chrome** y entra a **studiotangible.com.mx/login**
+2. Toca el menú **⋮** (arriba a la derecha) → **"Instalar aplicación"** / **"Agregar a pantalla principal"**.
+3. Confirma. El ícono **Tangible** aparece en tu pantalla de inicio y abre como app.
 
----
-
-## 5. iOS limitations (important)
-
-iOS PWAs are more restricted than Android. Known constraints:
-
-- **Safari only.** "Add to Home Screen" producing a standalone app only works from
-  **Safari**. Chrome/Firefox on iOS can't install PWAs (Apple restriction).
-- **Manual install.** iOS shows **no automatic install prompt** — the user must use
-  Share → Add to Home Screen. Consider telling clients/admin this once.
-- **Splash screens are per-device images.** iOS doesn't generate a splash from the
-  manifest; it needs an exact-size image per device. We ship portrait images for the
-  common modern iPhones (SE → 16 Pro Max). On an unlisted device iOS falls back to a
-  blank `theme-color` (cream) screen — still clean, just without the centered logo.
-  **Only portrait** splash images are included (landscape would double the set; the
-  app is portrait-oriented anyway).
-- **No push notifications** unless installed to the Home Screen, and only iOS 16.4+.
-  (Not used by this app today.)
-- **Storage can be evicted** by iOS if the PWA is unused for a long time.
-- **Updating the icon** requires the user to remove and re-add the app to the home
-  screen — iOS caches the old icon otherwise.
-
-Android (Chrome) has none of these limits: automatic install prompt, manifest-driven
-splash, maskable adaptive icons, etc.
+### Importante
+- Instálala desde **/login** (o el panel), **no** desde el link público de reservas.
+- En iPhone debe ser **Safari**.
+- Si algún día te pide iniciar sesión otra vez, solo vuelve a entrar; es normal.
 
 ---
 
-## 6. Regenerating splash sizes for a new device
+## 5. iOS limitations (technical)
 
-Edit the `SPLASHES` array in `scripts/generate-pwa-icons.mjs` (device-pixel sizes)
-**and** the `startupImage` list in `src/app/layout.tsx` (matching CSS width/height
-and DPR), then re-run the generator. Both lists are commented with the device each
-entry targets.
+- Install works **only from Safari**, and is **manual** (Share → Add to Home Screen).
+  iOS shows no automatic prompt — by design this is fine since only the admin installs.
+- iOS splash uses **one image per device**; common modern iPhones are covered. An
+  unlisted device falls back to a clean cream screen.
+- The installed app may keep a **separate login session** from Safari, so the admin
+  logs in once inside the app the first time.
+- Changing the icon later requires removing and re-adding the app (iOS caches it).
+
+---
+
+## 6. Adding a new device splash size
+
+Edit the `SPLASHES` array in `scripts/generate-pwa-icons.mjs` **and** the
+`startupImage` list in `src/lib/pwa-metadata.ts` (matching CSS width/height + DPR),
+then re-run the generator.
