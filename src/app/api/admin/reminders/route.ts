@@ -18,8 +18,13 @@ export async function GET() {
   const start = chihuahuaToUTC(today.year, today.month, today.day + 1, 0, 0);
   const end = chihuahuaToUTC(today.year, today.month, today.day + 2, 0, 0);
 
+  // Solo citas con teléfono: un recordatorio de WhatsApp no tiene sentido sin él.
   const appointments = await prisma.appointment.findMany({
-    where: { status: "CONFIRMED", date: { gte: start, lt: end } },
+    where: {
+      status: "CONFIRMED",
+      date: { gte: start, lt: end },
+      clientPhone: { not: null },
+    },
     include: { services: true },
     orderBy: { date: "asc" },
   });
@@ -44,16 +49,23 @@ export async function GET() {
   );
 }
 
-/** Marca el recordatorio de una cita como enviado (bitácora idempotente). */
+/**
+ * Marca/desmarca el recordatorio de una cita como enviado (bitácora idempotente).
+ * El envío real ocurre dentro de WhatsApp y es invisible para la app, así que el
+ * estado "enviado" lo confirma manualmente la admin. Acepta `sent` para poder
+ * deshacer un marcado por error.
+ */
 export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
-    const { appointmentId } = await req.json();
+    const { appointmentId, sent } = await req.json();
     if (typeof appointmentId !== "string" || !/^[a-f\d]{24}$/i.test(appointmentId)) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
+    // Por compatibilidad, si no se envía `sent` se asume true (marcar enviado).
+    const markSent = sent === undefined ? true : Boolean(sent);
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -66,17 +78,17 @@ export async function PATCH(req: Request) {
     if (existing) {
       await prisma.reminder.update({
         where: { id: existing.id },
-        data: { sent: true, sentAt: new Date() },
+        data: { sent: markSent, sentAt: markSent ? new Date() : null },
       });
     } else {
       await prisma.reminder.create({
         data: {
           appointmentId,
           clientName: appointment.clientName,
-          clientPhone: appointment.clientPhone,
+          clientPhone: appointment.clientPhone ?? "",
           scheduledFor: appointment.date,
-          sent: true,
-          sentAt: new Date(),
+          sent: markSent,
+          sentAt: markSent ? new Date() : null,
         },
       });
     }

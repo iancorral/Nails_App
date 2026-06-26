@@ -175,7 +175,7 @@ function CalendarContent() {
             >
               ← Panel
             </a>
-            <h1 className="text-2xl font-black text-salon-brown uppercase tracking-[0.15em]">
+            <h1 className="font-title text-2xl font-black text-salon-brown uppercase tracking-[0.15em]">
               Calendario
             </h1>
           </div>

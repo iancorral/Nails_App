@@ -71,7 +71,7 @@ export default function MetricsDashboard() {
               className="bg-white rounded-3xl border-2 border-salon-olive/20 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group block"
             >
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Ingresos</p>
-              <p className="text-2xl font-black text-salon-olive">${metrics.revenue.toLocaleString()}</p>
+              <p className="text-3xl font-black text-salon-olive">${metrics.revenue.toLocaleString()}</p>
               <p className="text-[10px] text-salon-olive/60 mt-1 font-bold group-hover:text-salon-olive transition-colors">
                 ver desglose →
               </p>
@@ -80,14 +80,14 @@ export default function MetricsDashboard() {
             {/* Citas confirmadas */}
             <div className="bg-white rounded-3xl border-2 border-salon-brown/20 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Citas</p>
-              <p className="text-2xl font-black text-salon-brown">{metrics.totalConfirmed}</p>
+              <p className="text-3xl font-black text-salon-brown">{metrics.totalConfirmed}</p>
               <p className="text-[10px] text-salon-gray mt-1 font-medium">confirmadas</p>
             </div>
 
             {/* Cancelaciones */}
             <div className="bg-white rounded-3xl border-2 border-salon-terracotta/20 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Canceladas</p>
-              <p className="text-2xl font-black text-salon-terracotta">{metrics.cancellationRate}%</p>
+              <p className="text-3xl font-black text-salon-terracotta">{metrics.cancellationRate}%</p>
               <p className="text-[10px] text-salon-gray mt-1 font-medium">{metrics.totalCancelled} citas</p>
             </div>
 

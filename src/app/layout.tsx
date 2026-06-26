@@ -1,17 +1,11 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Tipografía: la base (Century Gothic) se aplica a toda la interfaz vía
+// fontFamily.sans en tailwind.config.js; la marca y los títulos principales de
+// página (H1) usan .font-title (Boston Angel), pero NO los sub-encabezados de
+// sección. Ambas se declaran como @font-face autohospedadas en globals.css.
 
 // CAMBIO DE MARCA: TANGIBLE
 export const metadata: Metadata = {
@@ -29,9 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         {children}
       </body>
     </html>

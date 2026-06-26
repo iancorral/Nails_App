@@ -8,6 +8,27 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        // Texto general de la interfaz (Century Gothic). Tailwind aplica
+        // fontFamily.sans al <html>, así que esto define la tipografía base.
+        sans: [
+          '"Century Gothic"',
+          'CenturyGothic',
+          'Questrial',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+        ],
+        // Solo marca y títulos display grandes (Boston Angel). Con fallback a la
+        // base para degradar de forma elegante mientras no esté el archivo de fuente.
+        title: [
+          '"Boston Angel"',
+          '"Century Gothic"',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+        ],
+      },
       colors: {
         'salon-bg': '#FAF7F2',
         'salon-brown': '#2C1F0E',      // más oscuro, casi negro cálido

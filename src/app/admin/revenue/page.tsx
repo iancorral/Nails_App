@@ -73,7 +73,7 @@ function RevenueContent() {
           <a href="/admin" className="text-xs text-salon-gray font-bold uppercase tracking-wider hover:text-salon-brown mb-4 block">
             ← Volver al panel
           </a>
-          <h1 className="text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
+          <h1 className="font-title text-3xl font-black text-salon-brown uppercase tracking-[0.15em] mb-1">
             Ingresos
           </h1>
           <div className="flex items-center gap-3 opacity-70">
@@ -170,7 +170,7 @@ function RevenueContent() {
                     )}
                   </div>
                 </div>
-                <p className="text-2xl font-black text-salon-olive">${(data?.grandTotal ?? 0).toLocaleString()}</p>
+                <p className="text-3xl font-black text-salon-olive">${(data?.grandTotal ?? 0).toLocaleString()}</p>
               </div>
             )}
           </>

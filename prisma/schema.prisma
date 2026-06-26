@@ -33,7 +33,9 @@ model Appointment {
   date           DateTime
   endDate        DateTime
   clientName     String
-  clientPhone    String
+  // Opcional: una cita de mostrador o de menor de edad puede no tener teléfono.
+  // Cuando es null, las funciones de WhatsApp se deshabilitan para esa cita.
+  clientPhone    String?
   status         String    @default("CONFIRMED")
 
   // Pago

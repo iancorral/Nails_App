@@ -35,7 +35,7 @@ export default function LoginPage() {
       <MuralDecorations />
       <div className="relative z-10 w-full max-w-sm bg-white/90 backdrop-blur-sm rounded-3xl border-2 border-salon-olive/30 shadow-folk p-8 hand-drawn">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-salon-brown tracking-[0.3em] uppercase">
+          <h1 className="font-title text-2xl font-black text-salon-brown tracking-[0.3em] uppercase">
             Tangible
           </h1>
           <div className="flex items-center justify-center gap-3 mt-1 opacity-70">

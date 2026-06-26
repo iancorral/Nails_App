@@ -60,8 +60,13 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Tras crear la cita: URL de WhatsApp con la confirmación lista para enviar.
-  const [confirmUrl, setConfirmUrl] = useState<string | null>(null);
+  // Tras crear la cita: resultado para la pantalla de éxito.
+  // confirmUrl es null cuando no procede ofrecer WhatsApp (sin teléfono o cita pasada).
+  const [result, setResult] = useState<{
+    confirmUrl: string | null;
+    isPast: boolean;
+    hasPhone: boolean;
+  } | null>(null);
 
   // Si viene con fecha preseleccionada, saltar al paso 1 con la fecha lista
   useEffect(() => {
@@ -148,7 +153,7 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     // Usa preselectedTime como fuente primaria en modo rápido
     const effectiveTime = preselectedTime || selectedTime;
 
-    if (!clientName || !clientPhone || selectedServiceIds.length === 0 || !selectedDate || !effectiveTime) {
+    if (!clientName || selectedServiceIds.length === 0 || !selectedDate || !effectiveTime) {
       setError("Completa todos los campos requeridos.");
       return;
     }
@@ -168,12 +173,14 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     const safeDepositAmount =
       useDeposit && !Number.isNaN(depositAmountNum) ? depositAmountNum : undefined;
 
+    const trimmedPhone = clientPhone.trim();
+
     const res = await fetch("/api/admin/appointments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         clientName,
-        clientPhone,
+        clientPhone: trimmedPhone || undefined,
         serviceIds: selectedServiceIds,
         date: finalDate.toISOString(),
         adminNotes: adminNotes || undefined,
@@ -183,15 +190,25 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     });
 
     if (res.ok) {
-      // Mensaje de confirmación con la fecha/hora EXACTA recién agendada
-      // (finalDate es el instante UTC real → se formatea en hora de Chihuahua).
-      const serviceNames = selectedServices.map((s) => s.name);
-      const message = buildConfirmationMessage({
-        clientName,
-        date: finalDate,
-        serviceNames,
-      });
-      setConfirmUrl(buildWhatsAppUrl(clientPhone, message));
+      // La confirmación por WhatsApp solo aplica a citas futuras con teléfono:
+      // no tiene sentido confirmar una cita ya ocurrida (registro histórico).
+      const hasPhone = trimmedPhone.length > 0;
+      const isPast = finalDate.getTime() < Date.now();
+
+      let confirmUrl: string | null = null;
+      if (hasPhone && !isPast) {
+        // Mensaje de confirmación con la fecha/hora EXACTA recién agendada
+        // (finalDate es el instante UTC real → se formatea en hora de Chihuahua).
+        const serviceNames = selectedServices.map((s) => s.name);
+        const message = buildConfirmationMessage({
+          clientName,
+          date: finalDate,
+          serviceNames,
+        });
+        confirmUrl = buildWhatsAppUrl(trimmedPhone, message);
+      }
+
+      setResult({ confirmUrl, isPast, hasPhone });
       onCreated(); // refresca el calendario detrás del modal
     } else {
       const data = await res.json();
@@ -217,8 +234,10 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
 
   const categories = Array.from(new Set(allServices.map((s) => s.category)));
 
-  // ── Vista de éxito: cita creada, lista para enviar confirmación ──
-  if (confirmUrl) {
+  // ── Vista de éxito: cita creada ──
+  // La confirmación por WhatsApp solo se ofrece para citas futuras con teléfono.
+  // Para citas pasadas (registro histórico) o sin teléfono, solo se confirma el registro.
+  if (result) {
     return (
       <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
@@ -230,23 +249,35 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
               </svg>
             </div>
             <div>
-              <h2 className="font-black text-salon-brown uppercase tracking-wider">Cita creada</h2>
+              <h2 className="font-black text-salon-brown uppercase tracking-wider">
+                {result.confirmUrl ? "Cita creada" : "Cita registrada"}
+              </h2>
               <p className="text-xs text-salon-gray mt-1">
-                Envía la confirmación a{" "}
-                <span className="font-bold text-salon-brown">{clientName.split(" ")[0]}</span>{" "}
-                por WhatsApp.
+                {result.confirmUrl ? (
+                  <>
+                    Envía la confirmación a{" "}
+                    <span className="font-bold text-salon-brown">{clientName.split(" ")[0]}</span>{" "}
+                    por WhatsApp.
+                  </>
+                ) : result.isPast ? (
+                  "Cita pasada guardada en el historial. No se envía confirmación de una cita ya ocurrida."
+                ) : (
+                  "Guardada en la agenda. Sin teléfono, la confirmación por WhatsApp no está disponible."
+                )}
               </p>
             </div>
 
-            <a
-              href={confirmUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:brightness-95 transition-all"
-            >
-              <WhatsAppIcon className="w-4 h-4" />
-              Enviar confirmación
-            </a>
+            {result.confirmUrl && (
+              <a
+                href={result.confirmUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:brightness-95 transition-all"
+              >
+                <WhatsAppIcon className="w-4 h-4" />
+                Enviar confirmación
+              </a>
+            )}
 
             <button
               onClick={onClose}
@@ -293,7 +324,8 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
             <>
               <div>
                 <label className="block text-[10px] font-bold text-salon-terracotta uppercase tracking-widest mb-2">
-                  Teléfono (WhatsApp) *
+                  Teléfono (WhatsApp){" "}
+                  <span className="text-salon-gray normal-case tracking-normal font-medium">(opcional)</span>
                 </label>
                 <input
                   type="tel"
@@ -302,9 +334,13 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
                   placeholder="614 123 4567"
                   className="w-full border-2 border-salon-gray/30 rounded-xl px-4 py-3 text-salon-brown font-medium focus:border-salon-olive outline-none"
                 />
-                {searchingClient && (
+                {searchingClient ? (
                   <p className="text-[10px] text-salon-gray mt-1 animate-pulse">
                     Buscando historial...
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-salon-gray mt-1">
+                    Déjalo vacío para clientas de mostrador o menores sin contacto. Sin teléfono no habrá WhatsApp.
                   </p>
                 )}
               </div>
@@ -418,7 +454,7 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
 
               <button
                 onClick={() => setStep(2)}
-                disabled={!clientName || !clientPhone}
+                disabled={!clientName}
                 className="w-full py-3 bg-salon-olive text-white font-black text-xs uppercase tracking-widest rounded-2xl disabled:opacity-40 hover:bg-salon-olive/90 transition-all"
               >
                 Siguiente → Servicios
