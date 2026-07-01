@@ -2,25 +2,55 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CHIHUAHUA_UTC_OFFSET } from "@/lib/timezone";
+import { CHIHUAHUA_UTC_OFFSET, chihuahuaToUTC, getChihuahuaParts } from "@/lib/timezone";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const period = searchParams.get("period") ?? "week";
+  const period = searchParams.get("period") === "month" ? "month" : "week";
+  // offset: 0 = periodo actual, -1 = anterior, +1 = siguiente (tope en 0).
+  const rawOffset = parseInt(searchParams.get("offset") ?? "0", 10);
+  const offset = Number.isFinite(rawOffset) ? Math.min(rawOffset, 0) : 0;
 
-  const now = new Date();
-  const start = period === "week" ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now);
-  const end = period === "week" ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now);
+  // Los límites se calculan en el calendario de Chihuahua (UTC-6 fijo) para que
+  // una cita nunca caiga en el mes/semana equivocado por el desfase horario.
+  const cp = getChihuahuaParts(new Date());
+
+  let start: Date;
+  let end: Date;
+  let periodLabel: string;
+
+  if (period === "month") {
+    // Mes objetivo = mes local actual + offset (Date.UTC normaliza el overflow).
+    const target = new Date(Date.UTC(cp.year, cp.month - 1 + offset, 1, 12));
+    const ty = target.getUTCFullYear();
+    const tm = target.getUTCMonth() + 1; // 1-12
+    start = chihuahuaToUTC(ty, tm, 1, 0, 0);
+    end = chihuahuaToUTC(ty, tm + 1, 1, 0, 0);
+    periodLabel = format(target, "MMMM yyyy", { locale: es });
+  } else {
+    // Lunes de la semana local actual + offset semanas.
+    const daysSinceMonday = (cp.weekday + 6) % 7;
+    const monday = new Date(
+      Date.UTC(cp.year, cp.month - 1, cp.day - daysSinceMonday + offset * 7, 12)
+    );
+    const my = monday.getUTCFullYear();
+    const mm = monday.getUTCMonth() + 1;
+    const md = monday.getUTCDate();
+    start = chihuahuaToUTC(my, mm, md, 0, 0);
+    end = chihuahuaToUTC(my, mm, md + 7, 0, 0);
+    const sunday = new Date(Date.UTC(my, mm - 1, md + 6, 12));
+    periodLabel = `${format(monday, "d MMM", { locale: es })} – ${format(sunday, "d MMM", { locale: es })}`;
+  }
 
   const appointments = await prisma.appointment.findMany({
     where: {
       status: "CONFIRMED",
-      date: { gte: start, lte: end },
+      date: { gte: start, lt: end },
     },
     include: { services: true },
     orderBy: { date: "asc" },
@@ -59,10 +89,5 @@ export async function GET(req: Request) {
 
   const grandTotal = summary.CASH + summary.TRANSFER + summary.CARD + summary.PENDING;
 
-  const periodLabel =
-    period === "week"
-      ? `${format(start, "d MMM", { locale: es })} – ${format(end, "d MMM", { locale: es })}`
-      : format(now, "MMMM yyyy", { locale: es });
-
-  return NextResponse.json({ period, periodLabel, entries, summary, grandTotal });
+  return NextResponse.json({ period, offset, periodLabel, entries, summary, grandTotal });
 }

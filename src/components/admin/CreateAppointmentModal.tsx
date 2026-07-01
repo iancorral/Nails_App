@@ -23,6 +23,13 @@ type PastAppointment = {
   paymentStatus: string;
 };
 
+type ClientMatch = {
+  name: string;
+  phone: string | null;
+  visits: number;
+  lastVisit: string;
+};
+
 interface Props {
   onClose: () => void;
   onCreated: () => void;
@@ -43,6 +50,12 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
   const [searchingClient, setSearchingClient] = useState(false);
   const [pastTotal, setPastTotal] = useState(0);
   const [useDeposit, setUseDeposit] = useState(false);
+
+  // Búsqueda inteligente de clientas (por nombre o teléfono)
+  const [clientQuery, setClientQuery] = useState("");
+  const [clientMatches, setClientMatches] = useState<ClientMatch[]>([]);
+  const [searchingClients, setSearchingClients] = useState(false);
+  const [showMatches, setShowMatches] = useState(false);
 
   // Servicios
   const [allServices, setAllServices] = useState<Service[]>([]);
@@ -109,6 +122,39 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     const timeout = setTimeout(() => searchClient(clientPhone), 600);
     return () => clearTimeout(timeout);
   }, [clientPhone, searchClient]);
+
+  // Búsqueda de clientas por nombre o teléfono (dropdown de coincidencias)
+  useEffect(() => {
+    const term = clientQuery.trim();
+    if (term.length < 2) {
+      setClientMatches([]);
+      setSearchingClients(false);
+      return;
+    }
+    setSearchingClients(true);
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/clients?q=${encodeURIComponent(term)}`);
+        const data = await res.json();
+        setClientMatches(data.clients ?? []);
+      } catch {
+        setClientMatches([]);
+      } finally {
+        setSearchingClients(false);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [clientQuery]);
+
+  // Al elegir una clienta del dropdown: rellena nombre + teléfono existentes
+  // (reutiliza la clienta, evita duplicados) y dispara el panel de historial.
+  const selectClient = (match: ClientMatch) => {
+    setClientName(match.name);
+    setClientPhone(match.phone ?? "");
+    setClientQuery("");
+    setClientMatches([]);
+    setShowMatches(false);
+  };
 
   // Calcular duración total de servicios seleccionados
   const selectedServices = allServices.filter((s) =>
@@ -322,6 +368,71 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
           {/* ── PASO 1: CLIENTA ── */}
           {step === 1 && (
             <>
+              {/* Búsqueda inteligente: nombre o teléfono */}
+              <div className="relative">
+                <label className="block text-[10px] font-bold text-salon-terracotta uppercase tracking-widest mb-2">
+                  Buscar clienta{" "}
+                  <span className="text-salon-gray normal-case tracking-normal font-medium">(nombre o teléfono)</span>
+                </label>
+                <div className="relative">
+                  <svg
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-salon-gray pointer-events-none"
+                    fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.3-4.3" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={clientQuery}
+                    onChange={(e) => {
+                      setClientQuery(e.target.value);
+                      setShowMatches(true);
+                    }}
+                    onFocus={() => setShowMatches(true)}
+                    placeholder="Ej: Mel, Melissa, 614..."
+                    className="w-full border-2 border-salon-gray/30 rounded-xl pl-10 pr-4 py-3 text-salon-brown font-medium focus:border-salon-olive outline-none"
+                  />
+                </div>
+
+                {/* Dropdown de coincidencias */}
+                {showMatches && clientQuery.trim().length >= 2 && (
+                  <div className="mt-2 border-2 border-salon-olive/20 rounded-2xl bg-white shadow-sm divide-y divide-salon-olive/10 max-h-60 overflow-y-auto">
+                    {searchingClients && clientMatches.length === 0 ? (
+                      <p className="px-4 py-3 text-[11px] text-salon-gray animate-pulse">
+                        Buscando clientas...
+                      </p>
+                    ) : clientMatches.length > 0 ? (
+                      clientMatches.map((m) => {
+                        const digits = m.phone?.replace(/\D/g, "") ?? "";
+                        const phoneLabel = digits
+                          ? `•••${digits.slice(-4)}`
+                          : "Sin teléfono";
+                        return (
+                          <button
+                            key={digits ? `p:${digits}` : `n:${m.name.toLowerCase()}`}
+                            type="button"
+                            onClick={() => selectClient(m)}
+                            className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-salon-olive/5 transition-colors"
+                          >
+                            <span className="text-sm font-bold text-salon-brown truncate mr-2">
+                              {m.name}
+                            </span>
+                            <span className="text-[10px] font-bold text-salon-gray whitespace-nowrap shrink-0">
+                              {phoneLabel} · {m.visits} cita{m.visits !== 1 ? "s" : ""}
+                            </span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <p className="px-4 py-3 text-[11px] text-salon-gray">
+                        Sin coincidencias. Registra la clienta nueva abajo ↓
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-[10px] font-bold text-salon-terracotta uppercase tracking-widest mb-2">
                   Teléfono (WhatsApp){" "}

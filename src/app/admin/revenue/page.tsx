@@ -15,6 +15,7 @@ type Entry = {
 
 type RevenueData = {
   period: string;
+  offset: number;
   periodLabel: string;
   entries: Entry[];
   summary: { CASH: number; TRANSFER: number; CARD: number; PENDING: number };
@@ -39,15 +40,23 @@ function RevenueContent() {
   const initialPeriod = (searchParams.get("period") ?? "week") as "week" | "month";
 
   const [period, setPeriod] = useState<"week" | "month">(initialPeriod);
+  // offset: 0 = periodo actual, -1 = anterior, etc. (nunca positivo: no hay futuro).
+  const [offset, setOffset] = useState(0);
   const [data, setData] = useState<RevenueData | null>(null);
 
   // Carga derivada: el esqueleto se muestra mientras los datos cargados no
-  // correspondan al periodo seleccionado (evita setState síncrono en el efecto).
-  const loading = !data || data.period !== period;
+  // correspondan al periodo/offset seleccionado (evita setState síncrono en el efecto).
+  const loading = !data || data.period !== period || data.offset !== offset;
+
+  // Cambiar de semana↔mes vuelve al periodo actual.
+  const changePeriod = (next: "week" | "month") => {
+    setPeriod(next);
+    setOffset(0);
+  };
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/admin/revenue?period=${period}`)
+    fetch(`/api/admin/revenue?period=${period}&offset=${offset}`)
       .then((r) => r.json())
       .then((d) => {
         if (!cancelled) setData(d);
@@ -55,7 +64,7 @@ function RevenueContent() {
     return () => {
       cancelled = true;
     };
-  }, [period]);
+  }, [period, offset]);
 
   const groups = (["CASH", "TRANSFER", "CARD", "PENDING"] as const).map((method) => ({
     method,
@@ -85,24 +94,59 @@ function RevenueContent() {
         </header>
 
         {/* Period selector */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-xs text-salon-gray font-bold uppercase tracking-widest">
-            {data?.periodLabel}
-          </p>
+        <div className="flex items-center justify-end mb-4">
           <div className="flex gap-1 bg-white border-2 border-salon-olive/20 rounded-2xl p-1 shadow-sm">
             <button
-              onClick={() => setPeriod("week")}
+              onClick={() => changePeriod("week")}
               className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all ${period === "week" ? "bg-salon-olive text-white shadow-sm" : "text-salon-gray hover:text-salon-olive"}`}
             >
               Semana
             </button>
             <button
-              onClick={() => setPeriod("month")}
+              onClick={() => changePeriod("month")}
               className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all ${period === "month" ? "bg-salon-olive text-white shadow-sm" : "text-salon-gray hover:text-salon-olive"}`}
             >
               Mes
             </button>
           </div>
+        </div>
+
+        {/* Historical navigation */}
+        <div className="flex items-center justify-between mb-6 bg-white border-2 border-salon-olive/20 rounded-2xl p-1.5 shadow-sm">
+          <button
+            onClick={() => setOffset((o) => o - 1)}
+            aria-label={period === "week" ? "Semana anterior" : "Mes anterior"}
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-salon-brown hover:bg-salon-olive/10 transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+
+          <div className="text-center">
+            <p className="text-xs font-black text-salon-brown uppercase tracking-widest">
+              {data?.periodLabel ?? "—"}
+            </p>
+            {offset !== 0 && (
+              <button
+                onClick={() => setOffset(0)}
+                className="text-[9px] font-bold text-salon-terracotta uppercase tracking-wider hover:underline"
+              >
+                Volver al actual
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={() => setOffset((o) => Math.min(o + 1, 0))}
+            disabled={offset >= 0}
+            aria-label={period === "week" ? "Semana siguiente" : "Mes siguiente"}
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-salon-brown hover:bg-salon-olive/10 transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
         </div>
 
         {loading ? (
