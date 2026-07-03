@@ -17,6 +17,7 @@ interface AppointmentData {
   adminNotes?: string | null;
   services: Service[];
   finalPrice?: number | null;
+  status: string;
 }
 
 interface Props {
@@ -29,10 +30,22 @@ interface Props {
     adminNotes?: string | null;
     finalPrice?: number | null;
   }) => void;
+  /** Cita cancelada (soft) o restaurada: propaga el nuevo estado al calendario. */
+  onStatusChange: (status: "CONFIRMED" | "CANCELLED") => void;
 }
 
-export default function EditAppointmentModal({ appointment, onClose, onUpdated }: Props) {
+export default function EditAppointmentModal({
+  appointment,
+  onClose,
+  onUpdated,
+  onStatusChange,
+}: Props) {
+  const isCancelled = appointment.status === "CANCELLED";
   const [step, setStep] = useState<1 | 2>(1);
+
+  // Estado para la cancelación (soft) con confirmación en línea.
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [statusBusy,       setStatusBusy]       = useState(false);
 
   // Paso 1: Clienta
   const [clientName,  setClientName]  = useState(appointment.clientName);
@@ -110,6 +123,27 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
     setSubmitting(false);
   };
 
+  // Cancelar (soft) o restaurar: cambia el estado sin borrar datos.
+  const changeStatus = async (status: "CONFIRMED" | "CANCELLED") => {
+    setStatusBusy(true);
+    setError("");
+
+    const res = await fetch(`/api/appointments/${appointment.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+
+    if (res.ok) {
+      onStatusChange(status);
+      onClose();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError((data as { error?: string }).error ?? "No se pudo actualizar la cita.");
+      setStatusBusy(false);
+    }
+  };
+
   const categories = Array.from(new Set(allServices.map((s) => s.category)));
 
   return (
@@ -121,7 +155,7 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
         <div className="flex items-center justify-between p-6 border-b border-salon-olive/10">
           <div>
             <h2 className="font-black text-salon-brown uppercase tracking-wider">
-              Editar Cita
+              {isCancelled ? "Cita Cancelada" : "Editar Cita"}
             </h2>
             <p className="text-[10px] text-salon-gray uppercase tracking-widest mt-0.5">
               Paso {step} de 2 — {step === 1 ? "Clienta" : "Servicios"}
@@ -136,6 +170,31 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
         </div>
 
         <div className="p-6 space-y-5">
+
+          {/* ── BANNER: cita cancelada + restaurar ── */}
+          {isCancelled && (
+            <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-4">
+              <p className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
+                Cita cancelada
+              </p>
+              <p className="text-[11px] text-salon-gray font-medium mt-1">
+                No aparece en próximas ni ocupa disponibilidad. Puedes restaurarla
+                si se canceló por error.
+              </p>
+              <button
+                onClick={() => changeStatus("CONFIRMED")}
+                disabled={statusBusy}
+                className="mt-3 w-full py-3 bg-salon-olive text-white font-black text-xs uppercase tracking-widest rounded-2xl disabled:opacity-40 hover:bg-salon-olive/90 transition-all"
+              >
+                {statusBusy ? "Procesando..." : "↩ Restaurar cita"}
+              </button>
+              {error && (
+                <p className="text-xs text-red-600 font-bold text-center bg-red-50 py-2 rounded-xl mt-3">
+                  {error}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* ── PASO 1: CLIENTA ── */}
           {step === 1 && (
@@ -207,6 +266,52 @@ export default function EditAppointmentModal({ appointment, onClose, onUpdated }
               >
                 Siguiente → Servicios
               </button>
+
+              {/* ── ZONA DE RIESGO: cancelar (soft) ── */}
+              {!isCancelled && (
+                <div className="pt-4 mt-1 border-t border-salon-gray/15">
+                  {error && (
+                    <p className="text-xs text-red-600 font-bold text-center bg-red-50 py-2 rounded-xl mb-3">
+                      {error}
+                    </p>
+                  )}
+
+                  {confirmingCancel ? (
+                    <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
+                      <p className="text-xs font-black text-red-700 text-center">
+                        ¿Cancelar la cita de {clientName}?
+                      </p>
+                      <p className="text-[11px] text-red-600/80 font-medium text-center mt-1">
+                        Liberará el horario y pasará a Canceladas. Se conserva en el
+                        historial y podrás restaurarla después.
+                      </p>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => setConfirmingCancel(false)}
+                          disabled={statusBusy}
+                          className="flex-1 py-2.5 bg-white text-salon-gray border-2 border-salon-gray/20 font-black text-xs uppercase tracking-widest rounded-xl disabled:opacity-40 hover:border-salon-gray/40 transition-all"
+                        >
+                          No
+                        </button>
+                        <button
+                          onClick={() => changeStatus("CANCELLED")}
+                          disabled={statusBusy}
+                          className="flex-1 py-2.5 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-xl disabled:opacity-40 hover:bg-red-700 transition-all"
+                        >
+                          {statusBusy ? "Cancelando..." : "Sí, cancelar"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmingCancel(true)}
+                      className="w-full py-3 bg-white text-red-600 border-2 border-red-200 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-red-50 hover:border-red-300 transition-all"
+                    >
+                      Cancelar cita
+                    </button>
+                  )}
+                </div>
+              )}
             </>
           )}
 

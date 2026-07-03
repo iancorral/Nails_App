@@ -110,3 +110,40 @@ export async function isSlotBookable(
 
   return { ok: true };
 }
+
+/**
+ * True when a CONFIRMED appointment (other than `excludeId`) overlaps the
+ * [start, end) window on the same Chihuahua day, counting the post-appointment
+ * buffer. Unlike `isSlotBookable` this ignores working hours and past dates, so
+ * it can guard restoring a cancelled appointment back into a slot that was
+ * re-booked while it was cancelled without rejecting legitimate off-hours slots.
+ */
+export async function hasConfirmedCollision(
+  start: Date,
+  end: Date,
+  excludeId?: string
+): Promise<boolean> {
+  const local = new Date(start.getTime() - CHIHUAHUA_UTC_OFFSET * 3600000);
+  const year = local.getUTCFullYear();
+  const month = local.getUTCMonth() + 1;
+  const day = local.getUTCDate();
+  const dayStart = chihuahuaToUTC(year, month, day, 0, 0);
+  const dayEnd = chihuahuaToUTC(year, month, day + 1, 0, 0);
+
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      status: "CONFIRMED",
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+      OR: [
+        { date: { gte: dayStart, lt: dayEnd } },
+        { endDate: { gt: dayStart, lte: dayEnd } },
+      ],
+    },
+  });
+
+  return appointments.some((app) => {
+    const appStart = new Date(app.date);
+    const appEndWithBuffer = addMinutes(new Date(app.endDate), BUFFER_AFTER_APPOINTMENT);
+    return start.getTime() < appEndWithBuffer.getTime() && end.getTime() > appStart.getTime();
+  });
+}

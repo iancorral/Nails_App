@@ -84,6 +84,7 @@ export default function DayAgenda({
   }
 
   const confirmedApps = appointments.filter((a) => a.status !== "CANCELLED");
+  const cancelledApps = appointments.filter((a) => a.status === "CANCELLED");
   const publicStart = schedule ? timeToMinutes(schedule.startTime) : null;
   const publicEnd   = schedule ? timeToMinutes(schedule.endTime)   : null;
   const isDayOff    = schedule?.isDayOff ?? false;
@@ -229,7 +230,54 @@ export default function DayAgenda({
           ))}
         </>
       )}
+
+      {cancelledApps.length > 0 && (
+        <>
+          <p className="text-[9px] font-black text-salon-gray uppercase tracking-widest px-3 pt-3">
+            Canceladas ({cancelledApps.length})
+          </p>
+          {cancelledApps.map((app) => (
+            <CancelledCard
+              key={`cancel-${app.id}`}
+              app={app}
+              onClick={() => onAppointmentClick(app)}
+            />
+          ))}
+        </>
+      )}
     </div>
+  );
+}
+
+// Cita cancelada: registro atenuado con indicador claro. Al tocarla se abre el
+// modal de gestión, donde se puede restaurar o eliminar permanentemente.
+function CancelledCard({
+  app,
+  onClick,
+}: {
+  app: AgendaAppointment;
+  onClick: () => void;
+}) {
+  const startLabel = minutesToTimeLabel(utcDateToChihuahuaMinutes(new Date(app.date)));
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/70 p-3 text-left opacity-75 hover:opacity-100 hover:border-salon-olive/40 transition-all"
+    >
+      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-gray-200 text-gray-500 shrink-0">
+        Cancelada
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-black text-sm text-gray-500 line-through truncate">{app.clientName}</p>
+        <p className="text-[10px] font-bold text-gray-400 truncate">
+          {startLabel} · {app.services.map((s) => s.name).join(", ")}
+        </p>
+      </div>
+      <span className="text-[10px] font-black text-salon-olive uppercase tracking-wider shrink-0">
+        Restaurar ›
+      </span>
+    </button>
   );
 }
 

@@ -367,6 +367,10 @@ function CalendarContent() {
             handleAppointmentUpdated(editModal.id, data);
             setEditModal(null);
           }}
+          onStatusChange={(status) => {
+            handleAppointmentUpdated(editModal.id, { status });
+            setEditModal(null);
+          }}
         />
       )}
 

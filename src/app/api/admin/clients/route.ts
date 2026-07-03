@@ -32,8 +32,10 @@ export async function GET(req: Request) {
       or.push({ clientPhone: { contains: digits } });
     }
 
+    // Las citas canceladas no cuentan como visitas: la lealtad/historial solo
+    // debe reflejar visitas realizadas o confirmadas.
     const matches = await prisma.appointment.findMany({
-      where: { OR: or },
+      where: { OR: or, status: { not: "CANCELLED" } },
       select: { clientName: true, clientPhone: true, date: true },
       orderBy: { date: "desc" },
       take: 200,
@@ -78,16 +80,17 @@ export async function GET(req: Request) {
 
   const digits = phone.replace(/\D/g, "");
 
+  // Excluimos canceladas del historial y del total de visitas del cliente.
+  const where = { clientPhone: { contains: digits }, status: { not: "CANCELLED" } };
+
   const [appointments, total] = await Promise.all([
     prisma.appointment.findMany({
-      where: { clientPhone: { contains: digits } },
+      where,
       include: { services: true },
       orderBy: { date: "desc" },
       take: 3,
     }),
-    prisma.appointment.count({
-      where: { clientPhone: { contains: digits } },
-    }),
+    prisma.appointment.count({ where }),
   ]);
 
   return NextResponse.json({ appointments, total });
