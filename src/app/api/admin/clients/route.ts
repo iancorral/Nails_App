@@ -13,10 +13,6 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q");
   const phone = searchParams.get("phone");
-
-  // ── Modo búsqueda: nombre o teléfono → lista de clientas distintas ──────────
-  // No existe un modelo Client; las clientas se derivan de las citas. Agrupamos
-  // por teléfono (identificador estable) o, sin teléfono, por nombre normalizado.
   if (q !== null) {
     const term = q.trim();
     if (term.length < 2) {
@@ -27,13 +23,9 @@ export async function GET(req: Request) {
     const or: Prisma.AppointmentWhereInput[] = [
       { clientName: { contains: term, mode: "insensitive" } },
     ];
-    // Solo tratamos el término como teléfono si tiene al menos 3 dígitos.
     if (digits.length >= 3) {
       or.push({ clientPhone: { contains: digits } });
     }
-
-    // Las citas canceladas no cuentan como visitas: la lealtad/historial solo
-    // debe reflejar visitas realizadas o confirmadas.
     const matches = await prisma.appointment.findMany({
       where: { OR: or, status: { not: "CANCELLED" } },
       select: { clientName: true, clientPhone: true, date: true },
@@ -55,8 +47,6 @@ export async function GET(req: Request) {
         existing.visits += 1;
         if (m.date > existing.lastVisit) existing.lastVisit = m.date;
       } else {
-        // Como venimos ordenados por fecha desc, el primer nombre visto es la
-        // grafía más reciente del cliente.
         byClient.set(key, {
           name: m.clientName,
           phone: m.clientPhone,
@@ -73,14 +63,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ clients });
   }
 
-  // ── Modo historial: teléfono exacto → últimas citas + total ─────────────────
   if (!phone || phone.replace(/\D/g, "").length < 7) {
     return NextResponse.json({ appointments: [], total: 0 });
   }
 
   const digits = phone.replace(/\D/g, "");
 
-  // Excluimos canceladas del historial y del total de visitas del cliente.
   const where = { clientPhone: { contains: digits }, status: { not: "CANCELLED" } };
 
   const [appointments, total] = await Promise.all([

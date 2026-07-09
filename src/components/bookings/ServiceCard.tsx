@@ -39,7 +39,6 @@ export function ServiceCardItem({ service, onSelect, isSelected }: ServiceCardPr
   );
 }
 
-// Colores por categoría
 const CATEGORY_COLORS: Record<string, { border: string; bg: string; text: string; dot: string }> = {
   'Uñas':                { border: 'border-salon-lavender', bg: 'bg-salon-lavender/10', text: 'text-salon-lavender', dot: 'bg-salon-lavender' },
   'Extras':              { border: 'border-salon-yellow',   bg: 'bg-salon-yellow/20',   text: 'text-salon-brown',   dot: 'bg-salon-yellow' },
@@ -92,7 +91,6 @@ export function CategoryAccordion({ category, services, selectedServices, onSele
         </div>
       </button>
 
-      {/* Servicios del acordeón */}
       {open && (
         <div className="p-3 space-y-3 bg-salon-bg/30">
           {services.map((service) => {

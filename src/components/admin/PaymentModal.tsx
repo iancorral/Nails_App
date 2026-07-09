@@ -151,7 +151,6 @@ export default function PaymentModal({
             </div>
           </div>
 
-          {/* Método de pago */}
           <div>
             <label className="block text-[10px] font-bold text-salon-terracotta uppercase tracking-widest mb-2">
               Método
@@ -176,7 +175,6 @@ export default function PaymentModal({
             </div>
           </div>
 
-          {/* Anticipo */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] font-bold text-salon-terracotta uppercase tracking-widest mb-2">

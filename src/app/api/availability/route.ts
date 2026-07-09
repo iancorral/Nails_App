@@ -36,12 +36,10 @@ export async function GET(req: Request) {
     const dayStart = chihuahuaToUTC(year, month, day, 0, 0);
     const dayEnd = chihuahuaToUTC(year, month, day + 1, 0, 0);
 
-    // --- Horario laboral (override > weekly schedule > defaults; cerrado/bloqueado/día libre) ---
     const window = await resolveDayWindow(year, month, day);
     if (window.closed) return NextResponse.json([]);
     const { startMinutes, endMinutes } = window;
 
-    // --- ¿Es hoy en Chihuahua? ---
     const now = new Date();
     const chihuahuaNow = new Date(now.getTime() - CHIHUAHUA_UTC_OFFSET * 3600000);
     const isToday =
@@ -49,7 +47,6 @@ export async function GET(req: Request) {
       chihuahuaNow.getUTCMonth() === month - 1 &&
       chihuahuaNow.getUTCDate() === day;
 
-    // --- Citas confirmadas del día ---
     const appointments = await prisma.appointment.findMany({
       where: {
         status: "CONFIRMED",
@@ -60,8 +57,6 @@ export async function GET(req: Request) {
         ],
       },
     });
-
-    // --- Generar slots ---
     const slots: string[] = [];
     let currentMinutes = startMinutes;
 
@@ -79,7 +74,6 @@ export async function GET(req: Request) {
 
       const hasCollision = appointments.some((app) => {
         const appStart = new Date(app.date);
-        // Extend appointment end by buffer so the next slot must start after the gap
         const appEndWithBuffer = addMinutes(new Date(app.endDate), BUFFER_AFTER_APPOINTMENT);
         return slotStart.getTime() < appEndWithBuffer.getTime() && slotEnd.getTime() > appStart.getTime();
       });

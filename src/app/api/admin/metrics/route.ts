@@ -23,7 +23,6 @@ export async function GET(req: Request) {
   const confirmed = appointments.filter((a) => a.status === "CONFIRMED");
   const cancelled = appointments.filter((a) => a.status === "CANCELLED");
 
-  // Ingresos confirmados — usa finalPrice si fue ajustado, si no suma servicios
   const revenue = confirmed.reduce((acc, app) => {
     const price =
       app.finalPrice != null
@@ -32,7 +31,6 @@ export async function GET(req: Request) {
     return acc + price;
   }, 0);
 
-  // Servicio más solicitado
   const serviceCount: Record<string, { name: string; count: number }> = {};
   confirmed.forEach((app) => {
     app.services.forEach((svc) => {
@@ -43,7 +41,6 @@ export async function GET(req: Request) {
 
   const topService = Object.values(serviceCount).sort((a, b) => b.count - a.count)[0] ?? null;
 
-  // Duración promedio de cita
   const avgDuration =
     confirmed.length > 0
       ? Math.round(

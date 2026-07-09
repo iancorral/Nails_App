@@ -11,8 +11,6 @@ const createSchema = z.object({
     .min(2)
     .max(100)
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ.''\-\s]+$/, "Nombre contiene caracteres no permitidos"),
-  // Opcional: clienta de mostrador / menor de edad sin número de contacto.
-  // Se acepta un teléfono válido, vacío o ausente; vacío/ausente se guarda como null.
   clientPhone: z
     .string()
     .regex(/^[\d\s\-().+]{7,20}$/, "Teléfono inválido")
@@ -60,7 +58,6 @@ export async function POST(req: Request) {
     const startDate = new Date(date);
     const endDate = addMinutes(startDate, totalDuration);
 
-    // Normaliza el teléfono: vacío o solo espacios → null (sin WhatsApp).
     const normalizedPhone = clientPhone && clientPhone.trim() ? clientPhone.trim() : null;
 
     const appointment = await prisma.appointment.create({

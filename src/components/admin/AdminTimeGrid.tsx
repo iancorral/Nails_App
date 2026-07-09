@@ -15,8 +15,8 @@ interface Props {
   durationMinutes: number;
 }
 
-const START = 6 * 60;  // 06:00
-const END = 22 * 60;   // 22:00
+const START = 6 * 60;  
+const END = 22 * 60;  
 
 function label(mins: number) {
   return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;

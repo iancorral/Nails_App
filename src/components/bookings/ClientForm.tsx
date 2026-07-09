@@ -1,4 +1,3 @@
-// src/components/bookings/ClientForm.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -33,8 +32,6 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
       const safePhone = parsed.phone?.replace(/[^0-9+]/g, "").trim();
 
       if (safeName && safePhone) {
-        // Sincronizamos desde localStorage (sistema externo) tras el montaje:
-        // se hace en el efecto a propósito para no romper la hidratación SSR.
         /* eslint-disable react-hooks/set-state-in-effect */
         setName(safeName);
         setPhone(safePhone);
@@ -71,7 +68,6 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
         3. Tus Datos
       </h3>
       
-      {/* VISTA PARA CLIENTA RECURRENTE */}
       {isReturningUser ? (
         <div className="text-center">
           <div className="w-16 h-16 bg-salon-yellow rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-salon-brown shadow-folk">
@@ -83,8 +79,6 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
           <p className="text-xs text-salon-gray mb-6 font-medium">
             Usaremos el número <span className="font-bold text-salon-terracotta">...{phone.slice(-4)}</span>
           </p>
-
-          {/* Antes del botón CONFIRMAR RESERVA / CONFIRMAR CITA */}
           <div className="bg-salon-yellow/20 border border-salon-yellow/50 rounded-xl px-4 py-3 mb-2">
             <p className="text-[10px] text-salon-gray leading-relaxed text-center">
               Se requiere depósito de{" "}
@@ -117,10 +111,9 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
 
         </div>
       ) : (
-        /* VISTA PARA CLIENTA NUEVA */
+ 
         <form onSubmit={handleSubmit} className="space-y-5">
-          
-          {/* Trampa Anti-Bots */}
+
           <input 
             type="text" 
             name="website_url" 
@@ -159,8 +152,7 @@ export default function ClientForm({ onSubmit, isSubmitting, onGoBack }: ClientF
             />
           </div>
 
-          
-          {/* Antes del botón CONFIRMAR RESERVA / CONFIRMAR CITA */}
+
           <div className="bg-salon-yellow/20 border border-salon-yellow/50 rounded-xl px-4 py-3 mb-2">
             <p className="text-[10px] text-salon-gray leading-relaxed text-center">
               Se requiere depósito de{" "}

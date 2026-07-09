@@ -1,4 +1,3 @@
-// src/components/bookings/BookingCalendar.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -13,8 +12,7 @@ interface BookingCalendarProps {
 export default function BookingCalendar({ onDateTimeSelect, totalDuration }: BookingCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  // Resultados de disponibilidad etiquetados con la petición a la que pertenecen
-  // (fecha + duración), para poder derivar carga/error sin setState síncrono.
+
   const [result, setResult] = useState<{ key: string; times: string[] } | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
 
@@ -24,7 +22,6 @@ export default function BookingCalendar({ onDateTimeSelect, totalDuration }: Boo
   const dateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
   const reqKey = dateStr ? `${dateStr}|${totalDuration}` : null;
 
-  // Estado derivado de la petición vigente.
   const error = reqKey && errorKey === reqKey ? "No pudimos cargar los horarios." : null;
   const loadingTimes = !!reqKey && result?.key !== reqKey && errorKey !== reqKey;
   const availableTimes = result?.key === reqKey ? result.times : [];
@@ -53,12 +50,10 @@ export default function BookingCalendar({ onDateTimeSelect, totalDuration }: Boo
 
   return (
     <div className="mt-8 animate-in fade-in slide-in-from-bottom-4">
-      {/* Título Estilo Etiqueta */}
       <h3 className="font-bold text-salon-olive text-xs uppercase tracking-[0.2em] mb-4">
         Elige tu fecha
       </h3>
 
-      {/* Calendario Horizontal */}
       <div className="flex overflow-x-auto pb-6 gap-3 no-scrollbar touch-pan-x pl-1">
         {nextDays.map((date) => {
             const isSelected = selectedDate && isSameDay(date, selectedDate);

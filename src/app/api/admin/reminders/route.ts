@@ -4,21 +4,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { chihuahuaToUTC, getChihuahuaParts } from "@/lib/timezone";
 
-/**
- * Devuelve las citas de MAÑANA (día de calendario de Chihuahua) en vivo, junto
- * con si ya se envió su recordatorio. El mensaje se arma en el cliente desde
- * estos datos, por lo que siempre coincide con la base de datos y el calendario.
- */
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-  // "Mañana" en calendario de Chihuahua, traducido a límites UTC.
   const today = getChihuahuaParts(new Date());
   const start = chihuahuaToUTC(today.year, today.month, today.day + 1, 0, 0);
   const end = chihuahuaToUTC(today.year, today.month, today.day + 2, 0, 0);
 
-  // Solo citas con teléfono: un recordatorio de WhatsApp no tiene sentido sin él.
   const appointments = await prisma.appointment.findMany({
     where: {
       status: "CONFIRMED",
@@ -49,12 +43,6 @@ export async function GET() {
   );
 }
 
-/**
- * Marca/desmarca el recordatorio de una cita como enviado (bitácora idempotente).
- * El envío real ocurre dentro de WhatsApp y es invisible para la app, así que el
- * estado "enviado" lo confirma manualmente la admin. Acepta `sent` para poder
- * deshacer un marcado por error.
- */
 export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -64,7 +52,7 @@ export async function PATCH(req: Request) {
     if (typeof appointmentId !== "string" || !/^[a-f\d]{24}$/i.test(appointmentId)) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
-    // Por compatibilidad, si no se envía `sent` se asume true (marcar enviado).
+  
     const markSent = sent === undefined ? true : Boolean(sent);
 
     const appointment = await prisma.appointment.findUnique({

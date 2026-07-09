@@ -106,5 +106,3 @@ Tangible is a mobile-first SaaS-style booking platform that allows clients to br
 
 ## License
 Copyright (c) 2026 Ian Corral. All rights reserved.
-
-This project is not open source. The source code is published for portfolio demonstration purposes only. No permission is granted to copy, distribute, modify, or use this code for any commercial or personal purpose without explicit authorization.

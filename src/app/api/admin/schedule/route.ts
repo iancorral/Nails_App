@@ -21,7 +21,6 @@ export async function GET() {
     orderBy: { dayOfWeek: "asc" },
   });
 
-  // Si no hay horario configurado, devolver defaults
   if (schedule.length === 0) {
     return NextResponse.json(
       [0, 1, 2, 3, 4, 5, 6].map((day) => ({
@@ -47,7 +46,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
     }
 
-    // Borrar el horario anterior y guardar el nuevo completo
     await prisma.workSchedule.deleteMany();
     await prisma.workSchedule.createMany({ data: validation.data });
 

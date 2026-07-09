@@ -1,16 +1,5 @@
 import type { Metadata } from "next";
 
-// Metadatos que convierten una ruta en PWA INSTALABLE (manifest + tags de Apple
-// + splash de iOS). Se aplican SOLO en /login y /admin (ver sus layouts), de modo
-// que la app instalable sea exclusiva del panel de la administradora.
-//
-// La landing pública (clientas que llegan por el link de Instagram) NO enlaza el
-// manifest ni estos tags, así que el navegador no les ofrece "instalar la app":
-// ellas solo usan la web de reservas con normalidad.
-
-// Splash screens de iOS (Add to Home Screen). Cada imagen corresponde a la
-// resolución exacta de un iPhone; iOS elige la que coincide con la media query.
-// Las imágenes se generan con scripts/generate-pwa-icons.mjs. Solo retrato.
 const iosSplash = (
   cssW: number,
   cssH: number,
@@ -27,7 +16,6 @@ export const adminPwaMetadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Tangible",
-    // Texto oscuro sobre el fondo crema claro de la app.
     statusBarStyle: "default",
     startupImage: [
       iosSplash(320, 568, 2, 640, 1136),   // iPhone SE 1ª gen
@@ -42,8 +30,6 @@ export const adminPwaMetadata: Metadata = {
       iosSplash(430, 932, 3, 1290, 2796),  // iPhone 14/15 Pro Max, 16 Plus
     ],
   },
-  // Next emite `mobile-web-app-capable` (estándar) desde appleWebApp.capable.
-  // Añadimos la variante histórica de Apple para iOS < 16.4.
   other: {
     "apple-mobile-web-app-capable": "yes",
   },

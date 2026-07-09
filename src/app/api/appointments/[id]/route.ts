@@ -9,11 +9,6 @@ const patchSchema = z.object({
   status: z.enum(["CONFIRMED", "CANCELLED"]),
 });
 
-/**
- * Cancela (soft) o restaura una cita cambiando su estado. Nunca borra datos: una
- * cita cancelada permanece para historial, métricas de cancelación y reportes,
- * pero deja de ocupar disponibilidad y de aparecer en próximas/recordatorios.
- */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -44,9 +39,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Cita no encontrada" }, { status: 404 });
     }
 
-    // Al restaurar una cita futura, evita reponerla sobre un horario que otra
-    // cita confirmada haya ocupado mientras estuvo cancelada (evita doble reserva).
-    // Las citas pasadas se restauran sin validar: solo son registro histórico.
     if (
       status === "CONFIRMED" &&
       existing.status === "CANCELLED" &&

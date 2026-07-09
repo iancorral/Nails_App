@@ -30,7 +30,6 @@ interface Props {
     adminNotes?: string | null;
     finalPrice?: number | null;
   }) => void;
-  /** Cita cancelada (soft) o restaurada: propaga el nuevo estado al calendario. */
   onStatusChange: (status: "CONFIRMED" | "CANCELLED") => void;
 }
 
@@ -43,11 +42,9 @@ export default function EditAppointmentModal({
   const isCancelled = appointment.status === "CANCELLED";
   const [step, setStep] = useState<1 | 2>(1);
 
-  // Estado para la cancelación (soft) con confirmación en línea.
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [statusBusy,       setStatusBusy]       = useState(false);
 
-  // Paso 1: Clienta
   const [clientName,  setClientName]  = useState(appointment.clientName);
   const [clientPhone, setClientPhone] = useState(appointment.clientPhone ?? "");
   const [adminNotes,  setAdminNotes]  = useState(appointment.adminNotes ?? "");
@@ -55,7 +52,6 @@ export default function EditAppointmentModal({
     appointment.finalPrice != null ? String(appointment.finalPrice) : ""
   );
 
-  // Paso 2: Servicios
   const [allServices,        setAllServices]        = useState<Service[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
     appointment.services.map((s) => s.id)
@@ -123,7 +119,6 @@ export default function EditAppointmentModal({
     setSubmitting(false);
   };
 
-  // Cancelar (soft) o restaurar: cambia el estado sin borrar datos.
   const changeStatus = async (status: "CONFIRMED" | "CANCELLED") => {
     setStatusBusy(true);
     setError("");
@@ -151,7 +146,6 @@ export default function EditAppointmentModal({
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative z-10 bg-white w-full max-w-lg rounded-3xl border-2 border-salon-olive/30 shadow-xl my-6">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-salon-olive/10">
           <div>
             <h2 className="font-black text-salon-brown uppercase tracking-wider">
@@ -171,7 +165,6 @@ export default function EditAppointmentModal({
 
         <div className="p-6 space-y-5">
 
-          {/* ── BANNER: cita cancelada + restaurar ── */}
           {isCancelled && (
             <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-4">
               <p className="text-[11px] font-black text-gray-500 uppercase tracking-widest">
@@ -196,7 +189,6 @@ export default function EditAppointmentModal({
             </div>
           )}
 
-          {/* ── PASO 1: CLIENTA ── */}
           {step === 1 && (
             <>
               <p className="text-[10px] text-salon-gray font-bold uppercase tracking-widest">
@@ -267,7 +259,6 @@ export default function EditAppointmentModal({
                 Siguiente → Servicios
               </button>
 
-              {/* ── ZONA DE RIESGO: cancelar (soft) ── */}
               {!isCancelled && (
                 <div className="pt-4 mt-1 border-t border-salon-gray/15">
                   {error && (
@@ -315,7 +306,7 @@ export default function EditAppointmentModal({
             </>
           )}
 
-          {/* ── PASO 2: SERVICIOS ── */}
+  
           {step === 2 && (
             <>
               <p className="text-xs text-salon-gray font-medium">

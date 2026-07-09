@@ -12,12 +12,9 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const period = searchParams.get("period") === "month" ? "month" : "week";
-  // offset: 0 = periodo actual, -1 = anterior, +1 = siguiente (tope en 0).
   const rawOffset = parseInt(searchParams.get("offset") ?? "0", 10);
   const offset = Number.isFinite(rawOffset) ? Math.min(rawOffset, 0) : 0;
 
-  // Los límites se calculan en el calendario de Chihuahua (UTC-6 fijo) para que
-  // una cita nunca caiga en el mes/semana equivocado por el desfase horario.
   const cp = getChihuahuaParts(new Date());
 
   let start: Date;
@@ -25,7 +22,6 @@ export async function GET(req: Request) {
   let periodLabel: string;
 
   if (period === "month") {
-    // Mes objetivo = mes local actual + offset (Date.UTC normaliza el overflow).
     const target = new Date(Date.UTC(cp.year, cp.month - 1 + offset, 1, 12));
     const ty = target.getUTCFullYear();
     const tm = target.getUTCMonth() + 1; // 1-12
@@ -33,7 +29,6 @@ export async function GET(req: Request) {
     end = chihuahuaToUTC(ty, tm + 1, 1, 0, 0);
     periodLabel = format(target, "MMMM yyyy", { locale: es });
   } else {
-    // Lunes de la semana local actual + offset semanas.
     const daysSinceMonday = (cp.weekday + 6) % 7;
     const monday = new Date(
       Date.UTC(cp.year, cp.month - 1, cp.day - daysSinceMonday + offset * 7, 12)

@@ -71,12 +71,8 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  // Recordatorios que ya se abrieron en WhatsApp en esta sesión (estado local).
-  // No se persiste: abrir el chat NO implica que el mensaje se haya enviado, eso
-  // solo lo sabe la admin tras pulsar "Enviar" dentro de WhatsApp.
   const [openedIds, setOpenedIds] = useState<Set<string>>(new Set());
 
-  // Persiste el estado "enviado" (o lo deshace) en la bitácora.
   const setReminderSent = useCallback(async (appointmentId: string, sent: boolean) => {
     setReminders(prev =>
       prev.map(r => (r.id === appointmentId ? { ...r, reminderSent: sent } : r))
@@ -87,9 +83,6 @@ export default function AdminDashboard() {
       body: JSON.stringify({ appointmentId, sent }),
     }).catch(() => {});
   }, []);
-
-  // Abre WhatsApp con el recordatorio listo. NO lo marca como enviado: el envío
-  // real ocurre dentro de WhatsApp y la app no puede saber si se completó.
   const openReminder = useCallback((r: Reminder) => {
     const url = buildReminderUrl(r.clientPhone, {
       clientName: r.clientName,
@@ -109,8 +102,6 @@ export default function AdminDashboard() {
     setReminderSent(appointmentId, false);
   }, [setReminderSent]);
 
-  // "Abrir siguiente": WhatsApp solo permite abrir un chat por gesto del usuario.
-  // Abre el siguiente recordatorio que aún no se ha abierto ni marcado como enviado.
   const openNextReminder = useCallback(() => {
     const next = reminders.find(r => !r.reminderSent && !openedIds.has(r.id));
     if (next) openReminder(next);
@@ -147,9 +138,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Acciones rápidas: rejilla de 4 a ancho completo en móvil (tarjetas
-              alineadas y de igual altura), fila compacta alineada a la derecha en
-              escritorio (sin cambios respecto al diseño original). */}
           <div className="grid grid-cols-4 gap-2 w-full md:flex md:w-auto md:gap-3">
             <a href="/admin/calendar" className="flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-lavender/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
               <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">Agenda</span>

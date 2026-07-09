@@ -16,9 +16,6 @@ export default function MetricsDashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [period, setPeriod] = useState<"week" | "month">("week");
 
-  // Derivamos el estado de carga: mostramos el esqueleto mientras los datos
-  // actuales no correspondan al periodo seleccionado. Así evitamos llamar a
-  // setState de forma síncrona dentro del efecto.
   const loading = !metrics || metrics.period !== period;
 
   useEffect(() => {
@@ -35,7 +32,6 @@ export default function MetricsDashboard() {
 
   return (
     <div className="mb-8 animate-in fade-in">
-      {/* Selector de periodo */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xs font-black text-salon-olive uppercase tracking-widest">
           Resumen
@@ -65,7 +61,6 @@ export default function MetricsDashboard() {
       ) : metrics ? (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {/* Ingresos — clickable, links to revenue detail */}
             <a
               href={`/admin/revenue?period=${period}`}
               className="bg-white rounded-3xl border-2 border-salon-olive/20 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group block"
@@ -77,21 +72,19 @@ export default function MetricsDashboard() {
               </p>
             </a>
 
-            {/* Citas confirmadas */}
             <div className="bg-white rounded-3xl border-2 border-salon-brown/20 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Citas</p>
               <p className="text-2xl md:text-3xl font-black text-salon-brown">{metrics.totalConfirmed}</p>
               <p className="text-[10px] text-salon-gray mt-1 font-medium">confirmadas</p>
             </div>
 
-            {/* Cancelaciones */}
             <div className="bg-white rounded-3xl border-2 border-salon-terracotta/20 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Canceladas</p>
               <p className="text-2xl md:text-3xl font-black text-salon-terracotta">{metrics.cancellationRate}%</p>
               <p className="text-[10px] text-salon-gray mt-1 font-medium">{metrics.totalCancelled} citas</p>
             </div>
 
-            {/* Servicio top */}
+
             <div className="bg-white rounded-3xl border-2 border-salon-lavender/30 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Top servicio</p>
               {metrics.topService ? (

@@ -40,7 +40,6 @@ interface Props {
 export default function CreateAppointmentModal({ onClose, onCreated, preselectedDate, preselectedTime}: Props) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Datos clienta
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
@@ -51,21 +50,21 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
   const [pastTotal, setPastTotal] = useState(0);
   const [useDeposit, setUseDeposit] = useState(false);
 
-  // Búsqueda inteligente de clientas (por nombre o teléfono)
+ 
   const [clientQuery, setClientQuery] = useState("");
   const [clientMatches, setClientMatches] = useState<ClientMatch[]>([]);
   const [searchingClients, setSearchingClients] = useState(false);
   const [showMatches, setShowMatches] = useState(false);
 
-  // Servicios
+
   const [allServices, setAllServices] = useState<Service[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
-  // Fecha y hora
+
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState(preselectedTime ?? "");
   
-  // B. Nuevos estados para el manejo de disponibilidad y conflictos
+
   const [dayAppointments, setDayAppointments] = useState<DayOverviewAppointment[]>([]);
   const [conflictWith, setConflictWith] = useState<string | null>(null);
   const [checkingConflict, setCheckingConflict] = useState(false);
@@ -73,15 +72,13 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Tras crear la cita: resultado para la pantalla de éxito.
-  // confirmUrl es null cuando no procede ofrecer WhatsApp (sin teléfono o cita pasada).
+  
   const [result, setResult] = useState<{
     confirmUrl: string | null;
     isPast: boolean;
     hasPhone: boolean;
   } | null>(null);
 
-  // Si viene con fecha preseleccionada, saltar al paso 1 con la fecha lista
   useEffect(() => {
     if (preselectedDate) {
       setSelectedDate(format(preselectedDate, "yyyy-MM-dd"));
@@ -91,14 +88,12 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     }
   }, [preselectedDate, preselectedTime]);
 
-  // Cargar servicios al montar
   useEffect(() => {
     fetch("/api/services")
       .then((r) => r.json())
       .then(setAllServices);
   }, []);
 
-  // Buscar historial cuando el teléfono tiene suficientes dígitos
   const searchClient = useCallback(async (phone: string) => {
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 7) {
@@ -123,7 +118,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     return () => clearTimeout(timeout);
   }, [clientPhone, searchClient]);
 
-  // Búsqueda de clientas por nombre o teléfono (dropdown de coincidencias)
   useEffect(() => {
     const term = clientQuery.trim();
     if (term.length < 2) {
@@ -146,8 +140,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     return () => clearTimeout(timeout);
   }, [clientQuery]);
 
-  // Al elegir una clienta del dropdown: rellena nombre + teléfono existentes
-  // (reutiliza la clienta, evita duplicados) y dispara el panel de historial.
   const selectClient = (match: ClientMatch) => {
     setClientName(match.name);
     setClientPhone(match.phone ?? "");
@@ -156,14 +148,12 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     setShowMatches(false);
   };
 
-  // Calcular duración total de servicios seleccionados
   const selectedServices = allServices.filter((s) =>
     selectedServiceIds.includes(s.id)
   );
   const totalDuration = selectedServices.reduce((a, s) => a + s.duration, 0);
   const totalPrice = selectedServices.reduce((a, s) => a + s.price, 0);
 
-  // D. Evaluar conflictos en MODO RÁPIDO (con preselectedTime)
   useEffect(() => {
     if (!preselectedTime || !selectedDate || totalDuration === 0) return;
     setCheckingConflict(true);
@@ -180,7 +170,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
       .catch(() => setCheckingConflict(false));
   }, [preselectedTime, selectedDate, totalDuration]);
 
-  // C. Cargar citas del día para el grid en MODO NORMAL
   useEffect(() => {
     if (preselectedTime || !selectedDate) return;
     fetch(`/api/admin/day-overview?date=${selectedDate}`)
@@ -196,7 +185,7 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
   };
 
   const handleSubmit = async () => {
-    // Usa preselectedTime como fuente primaria en modo rápido
+
     const effectiveTime = preselectedTime || selectedTime;
 
     if (!clientName || selectedServiceIds.length === 0 || !selectedDate || !effectiveTime) {
@@ -210,8 +199,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     const [h, m] = effectiveTime.split(":").map(Number);
     const [y, mo, d] = selectedDate.split("-").map(Number);
     
-    // IMPORTANTE: usa chihuahuaToUTC para conversión correcta
-    // (evita depender del timezone del browser)
     const { chihuahuaToUTC } = await import("@/lib/timezone");
     const finalDate = chihuahuaToUTC(y, mo, d, h, m);
 
@@ -236,15 +223,11 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
     });
 
     if (res.ok) {
-      // La confirmación por WhatsApp solo aplica a citas futuras con teléfono:
-      // no tiene sentido confirmar una cita ya ocurrida (registro histórico).
       const hasPhone = trimmedPhone.length > 0;
       const isPast = finalDate.getTime() < Date.now();
 
       let confirmUrl: string | null = null;
       if (hasPhone && !isPast) {
-        // Mensaje de confirmación con la fecha/hora EXACTA recién agendada
-        // (finalDate es el instante UTC real → se formatea en hora de Chihuahua).
         const serviceNames = selectedServices.map((s) => s.name);
         const message = buildConfirmationMessage({
           clientName,
@@ -255,7 +238,7 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
       }
 
       setResult({ confirmUrl, isPast, hasPhone });
-      onCreated(); // refresca el calendario detrás del modal
+      onCreated(); 
     } else {
       const data = await res.json();
       const fieldErrors = data?.details
@@ -280,9 +263,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
 
   const categories = Array.from(new Set(allServices.map((s) => s.category)));
 
-  // ── Vista de éxito: cita creada ──
-  // La confirmación por WhatsApp solo se ofrece para citas futuras con teléfono.
-  // Para citas pasadas (registro histórico) o sin teléfono, solo se confirma el registro.
   if (result) {
     return (
       <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
@@ -365,10 +345,9 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
         </div>
 
         <div className="p-6 space-y-5">
-          {/* ── PASO 1: CLIENTA ── */}
           {step === 1 && (
             <>
-              {/* Búsqueda inteligente: nombre o teléfono */}
+
               <div className="relative">
                 <label className="block text-[10px] font-bold text-salon-terracotta uppercase tracking-widest mb-2">
                   Buscar clienta{" "}
@@ -395,7 +374,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
                   />
                 </div>
 
-                {/* Dropdown de coincidencias */}
                 {showMatches && clientQuery.trim().length >= 2 && (
                   <div className="mt-2 border-2 border-salon-olive/20 rounded-2xl bg-white shadow-sm divide-y divide-salon-olive/10 max-h-60 overflow-y-auto">
                     {searchingClients && clientMatches.length === 0 ? (
@@ -456,7 +434,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
                 )}
               </div>
 
-              {/* Historial encontrado */}
               {pastAppointments.length > 0 && (
                 <div className="bg-salon-yellow/20 rounded-2xl p-4 border border-salon-yellow/50">
                   <div className="flex justify-between items-center mb-2">
@@ -573,7 +550,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
             </>
           )}
 
-          {/* ── PASO 2: SERVICIOS ── */}
           {step === 2 && (
             <>
               <p className="text-xs text-salon-gray font-medium">
@@ -651,12 +627,10 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
             </>
           )}
 
-          {/* ── PASO 3: FECHA Y HORA ── */}
           {step === 3 && (
             <>
               {preselectedTime ? (
                 <>
-                  {/* Resumen — modo rápido */}
                   <div className="bg-salon-bg rounded-2xl p-4 border-2 border-salon-olive/20 text-xs space-y-1">
                     <div className="flex justify-between">
                       <span className="text-salon-gray font-bold uppercase tracking-wider">Clienta</span>
@@ -684,7 +658,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
                     </p>
                   )}
 
-                  {/* E. Bloque de advertencia actualizado */}
                   {!checkingConflict && conflictWith && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-700 font-bold flex items-start gap-2">
                       <svg className="w-3.5 h-3.5 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -720,7 +693,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
                 </>
               ) : (
                 <>
-                  {/* G. Date Input sin `min={minDateStr}` */}
                   <div>
                     <label className="block text-[10px] font-bold text-salon-terracotta uppercase tracking-widest mb-2">
                       Fecha de la cita
@@ -743,7 +715,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
                         Horario disponible
                       </label>
                       
-                      {/* F. Grid de horarios reemplazado */}
                       <AdminTimeGrid
                         selectedTime={selectedTime}
                         onSelect={setSelectedTime}
@@ -753,7 +724,6 @@ export default function CreateAppointmentModal({ onClose, onCreated, preselected
                     </div>
                   )}
 
-                  {/* Resumen */}
                   {selectedDate && selectedTime && (
                     <div className="bg-salon-bg rounded-2xl p-4 border-2 border-salon-olive/20 text-xs space-y-1 mt-4">
                       <div className="flex justify-between">

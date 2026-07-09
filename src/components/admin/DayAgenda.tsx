@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   utcDateToChihuahuaMinutes,
   minutesToTimeLabel,
@@ -63,17 +63,25 @@ export default function DayAgenda({
   onSlotClick, onAppointmentClick, onPaymentClick, onStartMove, onDropMove, onCancelMove,
 }: Props) {
 
-  // Calcular desde qué hora comenzar (hoy: omitir horas ya pasadas)
-  const effectiveStart = useMemo(() => {
-    if (!isCurrentDay) return ADMIN_START;
+  // Minuto actual (hora de Chihuahua): distingue los slots de hoy que ya pasaron.
+  const nowMinutes = useMemo(() => {
     const now = new Date();
     const chihuahuaHour = (now.getUTCHours() - CHIHUAHUA_UTC_OFFSET + 24) % 24;
-    const chihuahuaMin = now.getUTCMinutes();
-    const currentMin = chihuahuaHour * 60 + chihuahuaMin;
-    // Redondear al siguiente slot de 30 min
-    const nextSlot = Math.ceil(currentMin / SLOT_MINUTES) * SLOT_MINUTES;
-    return Math.max(ADMIN_START, nextSlot);
-  }, [isCurrentDay]);
+    return chihuahuaHour * 60 + now.getUTCMinutes();
+  }, []);
+
+  // Por defecto, hoy la agenda arranca en el próximo slot (omite horas ya
+  // pasadas para reducir ruido). El botón "horas anteriores" las revela para
+  // registrar una cita que se olvidó agendar más temprano el mismo día.
+  const [showEarlierToday, setShowEarlierToday] = useState(false);
+
+  const nextSlotToday = useMemo(
+    () => Math.max(ADMIN_START, Math.ceil(nowMinutes / SLOT_MINUTES) * SLOT_MINUTES),
+    [nowMinutes]
+  );
+
+  const gridStart = isCurrentDay && !showEarlierToday ? nextSlotToday : ADMIN_START;
+  const hasEarlierToday = isCurrentDay && nextSlotToday > ADMIN_START;
 
   if (loading) {
     return (
@@ -96,7 +104,7 @@ export default function DayAgenda({
 
   const rendered = new Set<string>();
   const rows: React.ReactNode[] = [];
-  let t = effectiveStart; // ← usa effectiveStart, no ADMIN_START
+  let t = gridStart;
 
   while (t < ADMIN_END) {
     const app = appsByStart.get(t);
@@ -130,6 +138,9 @@ export default function DayAgenda({
 
     const label = minutesToTimeLabel(t);
     const isDropTarget = moveModeId !== null;
+    // Un slot es "pasado" si el día completo ya pasó, o si es una hora de hoy
+    // anterior al momento actual (cita olvidada que se registra a posteriori).
+    const slotPast = isPast || (isCurrentDay && t < nowMinutes);
 
     rows.push(
       <button
@@ -141,7 +152,7 @@ export default function DayAgenda({
         className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl border transition-all text-left group ${
           isDropTarget
             ? "border-2 border-dashed border-blue-400 bg-blue-50 hover:bg-blue-100"
-            : isPast
+            : slotPast
             ? "border-dashed border-gray-200 hover:border-salon-gray/40 hover:bg-gray-50"
             : "border-dashed border-salon-gray/15 hover:border-salon-olive hover:bg-salon-olive/5"
         }`}
@@ -149,7 +160,7 @@ export default function DayAgenda({
         <span className={`text-[11px] font-black uppercase tracking-wider w-12 shrink-0 ${
           isDropTarget
             ? "text-blue-600"
-            : isPast
+            : slotPast
             ? "text-gray-300"
             : !inPublicHours
             ? "text-salon-gray/40"
@@ -160,13 +171,13 @@ export default function DayAgenda({
         <span className={`text-[10px] font-bold transition-opacity opacity-0 group-hover:opacity-100 ${
           isDropTarget
             ? "text-blue-600"
-            : isPast
+            : slotPast
             ? "text-salon-gray/60"
             : "text-salon-olive"
         }`}>
           {isDropTarget
             ? "Soltar aquí"
-            : isPast
+            : slotPast
             ? "+ Registrar cita pasada"
             : !inPublicHours
             ? "+ Agregar (fuera de horario)"
@@ -206,6 +217,18 @@ export default function DayAgenda({
             Tip: navega a otro día en el calendario para mover entre días.
           </p>
         </div>
+      )}
+
+      {/* Hoy: revela las horas ya pasadas para registrar una cita olvidada. */}
+      {hasEarlierToday && !moveModeId && (
+        <button
+          onClick={() => setShowEarlierToday((v) => !v)}
+          className="w-full text-[10px] font-black uppercase tracking-widest text-salon-olive border border-dashed border-salon-olive/30 rounded-xl px-3 py-2 hover:bg-salon-olive/5 transition-all"
+        >
+          {showEarlierToday
+            ? "Ocultar horas anteriores"
+            : "＋ Registrar cita anterior de hoy"}
+        </button>
       )}
 
       {rows}
