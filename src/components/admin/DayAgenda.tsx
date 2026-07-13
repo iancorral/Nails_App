@@ -8,6 +8,7 @@ import {
 } from "@/lib/timezone";
 import WhatsAppIcon from "@/components/icons/WhatsAppIcon";
 import { METHOD_LABELS } from "@/components/admin/PaymentBadge";
+import { SensitiveAmount } from "@/components/privacy";
 import { normalizeWhatsappPhone } from "@/lib/whatsapp";
 
 type Service = { id: string; name: string; price: number; duration: number; category: string };
@@ -347,7 +348,7 @@ function AppointmentCard({
               ))}
             </div>
           </div>
-          <span className="text-xs font-black shrink-0">${price}</span>
+          <SensitiveAmount value={price} className="text-xs font-black shrink-0" />
         </div>
       </button>
 

@@ -5,6 +5,7 @@ import MetricsDashboard from '@/components/admin/MetricsDashboard';
 import MuralDecorations from '@/components/layout/MuralDecorations';
 import PaymentBadge from '@/components/admin/PaymentBadge';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
+import { SensitiveAmount } from '@/components/privacy';
 import { buildReminderUrl } from '@/lib/whatsapp';
 import {
   formatChihuahuaTime,
@@ -304,7 +305,7 @@ export default function AdminDashboard() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-black text-salon-brown uppercase tracking-wide truncate">{app.clientName}</h3>
-                      <span className="text-sm font-black text-salon-brown shrink-0">${price}</span>
+                      <SensitiveAmount value={price} className="text-sm font-black text-salon-brown shrink-0" />
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[10px] text-salon-terracotta font-bold">{formatChihuahuaTime(apptDate)}</span>

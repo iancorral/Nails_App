@@ -1,7 +1,10 @@
 import { getServerSession } from "next-auth";
+import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { adminPwaMetadata } from "@/lib/pwa-metadata";
+import { PrivacyProvider } from "@/components/privacy";
+import { PRIVACY_COOKIE, isPrivacyEnabled } from "@/lib/privacy";
 
 export const metadata = adminPwaMetadata;
 
@@ -12,5 +15,9 @@ export default async function AdminLayout({
 }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
-  return <>{children}</>;
+
+  const cookieStore = await cookies();
+  const hidden = isPrivacyEnabled(cookieStore.get(PRIVACY_COOKIE)?.value);
+
+  return <PrivacyProvider initialHidden={hidden}>{children}</PrivacyProvider>;
 }

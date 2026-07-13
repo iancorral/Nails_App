@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { PrivacyToggle, SensitiveAmount } from "@/components/privacy";
 
 type Metrics = {
   period: string;
@@ -36,19 +37,22 @@ export default function MetricsDashboard() {
         <h2 className="text-xs font-black text-salon-olive uppercase tracking-widest">
           Resumen
         </h2>
-        <div className="flex gap-1 bg-white border-2 border-salon-olive/20 rounded-2xl p-1 shadow-sm">
-          <button
-            onClick={() => setPeriod("week")}
-            className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all ${period === "week" ? "bg-salon-olive text-white shadow-sm" : "text-salon-gray hover:text-salon-olive"}`}
-          >
-            Semana
-          </button>
-          <button
-            onClick={() => setPeriod("month")}
-            className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all ${period === "month" ? "bg-salon-olive text-white shadow-sm" : "text-salon-gray hover:text-salon-olive"}`}
-          >
-            Mes
-          </button>
+        <div className="flex items-center gap-2">
+          <PrivacyToggle />
+          <div className="flex gap-1 bg-white border-2 border-salon-olive/20 rounded-2xl p-1 shadow-sm">
+            <button
+              onClick={() => setPeriod("week")}
+              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all ${period === "week" ? "bg-salon-olive text-white shadow-sm" : "text-salon-gray hover:text-salon-olive"}`}
+            >
+              Semana
+            </button>
+            <button
+              onClick={() => setPeriod("month")}
+              className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all ${period === "month" ? "bg-salon-olive text-white shadow-sm" : "text-salon-gray hover:text-salon-olive"}`}
+            >
+              Mes
+            </button>
+          </div>
         </div>
       </div>
 
@@ -66,7 +70,10 @@ export default function MetricsDashboard() {
               className="bg-white rounded-3xl border-2 border-salon-olive/20 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group block"
             >
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Ingresos</p>
-              <p className="text-2xl md:text-3xl font-black text-salon-olive">${metrics.revenue.toLocaleString()}</p>
+              <SensitiveAmount
+                value={metrics.revenue}
+                className="block text-2xl md:text-3xl font-black text-salon-olive"
+              />
               <p className="text-[10px] text-salon-olive/60 mt-1 font-bold group-hover:text-salon-olive transition-colors">
                 ver desglose →
               </p>

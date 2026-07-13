@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import MuralDecorations from "@/components/layout/MuralDecorations";
+import { PrivacyToggle, SensitiveAmount } from "@/components/privacy";
 
 type Entry = {
   id: string;
@@ -94,7 +95,8 @@ function RevenueContent() {
         </header>
 
         {/* Period selector */}
-        <div className="flex items-center justify-end mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <PrivacyToggle />
           <div className="flex gap-1 bg-white border-2 border-salon-olive/20 rounded-2xl p-1 shadow-sm">
             <button
               onClick={() => changePeriod("week")}
@@ -165,7 +167,7 @@ function RevenueContent() {
                     {/* Group header */}
                     <div className={`flex items-center justify-between px-5 py-3 border-b ${border}`}>
                       <span className={`text-xs font-black uppercase tracking-widest ${text}`}>{label}</span>
-                      <span className={`text-base font-black ${text}`}>${total.toLocaleString()}</span>
+                      <SensitiveAmount value={total} className={`text-base font-black ${text}`} />
                     </div>
 
                     {/* Entries */}
@@ -184,7 +186,7 @@ function RevenueContent() {
                               {STATUS_LABEL[entry.paymentStatus] ?? entry.paymentStatus}
                             </span>
                           </div>
-                          <span className="text-sm font-black text-salon-brown">${entry.amount.toLocaleString()}</span>
+                          <SensitiveAmount value={entry.amount} className="text-sm font-black text-salon-brown" />
                         </div>
                       ))}
                     </div>
@@ -208,13 +210,17 @@ function RevenueContent() {
                     {(["CASH", "TRANSFER", "CARD", "PENDING"] as const).map((m) =>
                       (data?.summary[m] ?? 0) > 0 ? (
                         <span key={m} className={`text-[10px] font-bold ${METHOD_CONFIG[m].text}`}>
-                          {METHOD_CONFIG[m].label}: ${(data?.summary[m] ?? 0).toLocaleString()}
+                          {METHOD_CONFIG[m].label}:{" "}
+                          <SensitiveAmount value={data?.summary[m] ?? 0} />
                         </span>
                       ) : null
                     )}
                   </div>
                 </div>
-                <p className="text-3xl font-black text-salon-olive">${(data?.grandTotal ?? 0).toLocaleString()}</p>
+                <SensitiveAmount
+                  value={data?.grandTotal ?? 0}
+                  className="text-3xl font-black text-salon-olive"
+                />
               </div>
             )}
           </>

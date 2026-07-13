@@ -13,6 +13,7 @@ import CreateAppointmentModal from "@/components/admin/CreateAppointmentModal";
 import EditAppointmentModal from "@/components/admin/EditAppointmentModal";
 import PaymentModal from "@/components/admin/PaymentModal";
 import DayAgenda, { AgendaAppointment } from "@/components/admin/DayAgenda";
+import { PrivacyToggle } from "@/components/privacy";
 import { chihuahuaToUTC, chihuahuaDateKey } from "@/lib/timezone";
 
 type DaySchedule = {
@@ -179,6 +180,7 @@ function CalendarContent() {
               Calendario
             </h1>
           </div>
+          <PrivacyToggle />
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
