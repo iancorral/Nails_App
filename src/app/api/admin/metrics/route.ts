@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { getAppointmentAmount, isFreeAmount } from "@/lib/pricing";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -23,13 +24,13 @@ export async function GET(req: Request) {
   const confirmed = appointments.filter((a) => a.status === "CONFIRMED");
   const cancelled = appointments.filter((a) => a.status === "CANCELLED");
 
-  const revenue = confirmed.reduce((acc, app) => {
-    const price =
-      app.finalPrice != null
-        ? Number(app.finalPrice)
-        : app.services.reduce((s, svc) => s + svc.price, 0);
-    return acc + price;
-  }, 0);
+  // Free appointments count as appointments but contribute $0 to revenue, so
+  // they are excluded from the average ticket to avoid diluting it.
+  const amounts = confirmed.map(getAppointmentAmount);
+  const revenue = amounts.reduce((acc, amount) => acc + amount, 0);
+  const chargedCount = amounts.filter((amount) => !isFreeAmount(amount)).length;
+  const freeCount = amounts.length - chargedCount;
+  const avgTicket = chargedCount > 0 ? Math.round(revenue / chargedCount) : 0;
 
   const serviceCount: Record<string, { name: string; count: number }> = {};
   confirmed.forEach((app) => {
@@ -53,13 +54,13 @@ export async function GET(req: Request) {
   return NextResponse.json({
     period,
     totalConfirmed: confirmed.length,
+    // Cancellations are still tracked; they just no longer own a KPI card.
     totalCancelled: cancelled.length,
+    freeCount,
+    chargedCount,
     revenue,
+    avgTicket,
     topService,
     avgDuration,
-    cancellationRate:
-      appointments.length > 0
-        ? Math.round((cancelled.length / appointments.length) * 100)
-        : 0,
   });
 }

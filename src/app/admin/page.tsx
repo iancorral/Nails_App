@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import MetricsDashboard from '@/components/admin/MetricsDashboard';
 import MuralDecorations from '@/components/layout/MuralDecorations';
 import PaymentBadge from '@/components/admin/PaymentBadge';
+import FreeTag from '@/components/admin/FreeTag';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 import { SensitiveAmount } from '@/components/privacy';
+import { getAppointmentAmount, isFreeAmount } from '@/lib/pricing';
 import { buildReminderUrl } from '@/lib/whatsapp';
 import {
   formatChihuahuaTime,
@@ -38,9 +40,32 @@ type Reminder = {
   reminderSent: boolean;
 };
 
+type AppointmentTab = 'UPCOMING' | 'HISTORY' | 'CANCELLED';
+
+const TABS: { id: AppointmentTab; label: string; activeClasses: string; empty: string }[] = [
+  {
+    id: 'UPCOMING',
+    label: 'Próximas',
+    activeClasses: 'text-salon-olive border-salon-olive',
+    empty: 'No hay citas próximas',
+  },
+  {
+    id: 'HISTORY',
+    label: 'Historial',
+    activeClasses: 'text-salon-brown border-salon-brown',
+    empty: 'Aún no hay citas en el historial',
+  },
+  {
+    id: 'CANCELLED',
+    label: 'Canceladas',
+    activeClasses: 'text-salon-terracotta border-salon-terracotta',
+    empty: 'No hay citas canceladas',
+  },
+];
+
 export default function AdminDashboard() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [filter, setFilter] = useState<'UPCOMING' | 'HISTORY'>('UPCOMING');
+  const [filter, setFilter] = useState<AppointmentTab>('UPCOMING');
   const [loading, setLoading] = useState(true);
   const [reminders, setReminders] = useState<Reminder[]>([]);
 
@@ -110,14 +135,36 @@ export default function AdminDashboard() {
 
   const unopenedCount = reminders.filter(r => !r.reminderSent && !openedIds.has(r.id)).length;
 
-  const filteredAppointments = appointments.filter(app => {
-    const appDate = new Date(app.endDate);
-    const now = new Date();
-    const isFinished = appDate < now;
-    const isCancelled = app.status === 'CANCELLED';
-    if (filter === 'UPCOMING') return !isFinished && !isCancelled;
-    return isFinished || isCancelled;
-  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // A cancelled appointment always belongs to its own tab, whether it already
+  // happened or not; the rest split on whether they have finished.
+  const appointmentsByTab = useMemo(() => {
+    const now = new Date().getTime();
+    const groups: Record<AppointmentTab, Appointment[]> = {
+      UPCOMING: [],
+      HISTORY: [],
+      CANCELLED: [],
+    };
+
+    appointments.forEach(app => {
+      if (app.status === 'CANCELLED') groups.CANCELLED.push(app);
+      else if (new Date(app.endDate).getTime() < now) groups.HISTORY.push(app);
+      else groups.UPCOMING.push(app);
+    });
+
+    const soonestFirst = (a: Appointment, b: Appointment) =>
+      new Date(a.date).getTime() - new Date(b.date).getTime();
+    const mostRecentFirst = (a: Appointment, b: Appointment) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime();
+
+    groups.UPCOMING.sort(soonestFirst);
+    groups.HISTORY.sort(mostRecentFirst);
+    groups.CANCELLED.sort(mostRecentFirst);
+
+    return groups;
+  }, [appointments]);
+
+  const activeTab = TABS.find(tab => tab.id === filter) ?? TABS[0];
+  const visibleAppointments = appointmentsByTab[filter];
 
   return (
     <main className="min-h-screen p-6 md:p-10 relative bg-salon-bg">
@@ -261,13 +308,24 @@ export default function AdminDashboard() {
         )}
 
         {/* TABS */}
-        <div className="flex gap-6 mb-3 border-b-2 border-salon-olive/10 pb-1">
-          <button onClick={() => setFilter('UPCOMING')} className={`pb-2 text-xs font-black uppercase tracking-widest transition-all border-b-4 ${filter === 'UPCOMING' ? 'text-salon-olive border-salon-olive' : 'text-salon-gray border-transparent hover:text-salon-brown'}`}>
-            Próximas
-          </button>
-          <button onClick={() => setFilter('HISTORY')} className={`pb-2 text-xs font-black uppercase tracking-widest transition-all border-b-4 ${filter === 'HISTORY' ? 'text-salon-terracotta border-salon-terracotta' : 'text-salon-gray border-transparent hover:text-salon-brown'}`}>
-            Historial / Canceladas
-          </button>
+        <div className="flex gap-4 sm:gap-6 mb-3 border-b-2 border-salon-olive/10 pb-1 overflow-x-auto">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              aria-pressed={filter === tab.id}
+              className={`shrink-0 whitespace-nowrap pb-2 text-xs font-black uppercase tracking-widest transition-all border-b-4 ${
+                filter === tab.id
+                  ? tab.activeClasses
+                  : 'text-salon-gray border-transparent hover:text-salon-brown'
+              }`}
+            >
+              {tab.label}
+              <span className="ml-1.5 tabular-nums opacity-60">
+                {appointmentsByTab[tab.id].length}
+              </span>
+            </button>
+          ))}
         </div>
 
         <p className="text-[10px] text-salon-gray font-bold uppercase tracking-wider mb-3">
@@ -280,13 +338,14 @@ export default function AdminDashboard() {
             <div className="text-center py-20 text-salon-gray animate-pulse font-bold text-xs uppercase tracking-widest">
               Cargando agenda...
             </div>
-          ) : filteredAppointments.length === 0 ? (
+          ) : visibleAppointments.length === 0 ? (
             <div className="text-center py-20 border-2 border-dashed border-salon-gray/20 rounded-3xl">
-              <p className="text-salon-gray font-bold text-sm uppercase">No hay citas en esta sección</p>
+              <p className="text-salon-gray font-bold text-sm uppercase">{activeTab.empty}</p>
             </div>
           ) : (
-            filteredAppointments.map((app) => {
-              const price = app.finalPrice ?? app.services.reduce((a, s) => a + s.price, 0);
+            visibleAppointments.map((app) => {
+              const price = getAppointmentAmount(app);
+              const isFree = isFreeAmount(price);
               const apptDate = new Date(app.date);
               const dateKey = chihuahuaDateKey(apptDate);
               return (
@@ -305,7 +364,11 @@ export default function AdminDashboard() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-black text-salon-brown uppercase tracking-wide truncate">{app.clientName}</h3>
-                      <SensitiveAmount value={price} className="text-sm font-black text-salon-brown shrink-0" />
+                      {isFree ? (
+                        <FreeTag className="shrink-0" />
+                      ) : (
+                        <SensitiveAmount value={price} className="text-sm font-black text-salon-brown shrink-0" />
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[10px] text-salon-terracotta font-bold">{formatChihuahuaTime(apptDate)}</span>
@@ -320,6 +383,7 @@ export default function AdminDashboard() {
                         appStatus={(app.status as 'CONFIRMED' | 'CANCELLED')}
                         createdByAdmin={app.createdByAdmin}
                         paymentMethod={app.paymentMethod}
+                        isFree={isFree}
                       />
                     </div>
                   </div>

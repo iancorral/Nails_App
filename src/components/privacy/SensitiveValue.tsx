@@ -2,14 +2,15 @@
 
 import { usePrivacy } from "./PrivacyProvider";
 
-const MASK_CHARACTER = "•";
-const MIN_MASK_LENGTH = 3;
-const MAX_MASK_LENGTH = 6;
+/**
+ * The one placeholder every masked value renders. It is deliberately constant:
+ * a mask sized after the real value would leak its magnitude and make amounts
+ * jump around as rows change.
+ */
+const MASK = "••••••";
 
 interface Props {
   children: React.ReactNode;
-  /** Mask width in characters. Inferred from `children` when it is plain text. */
-  maskLength?: number;
   className?: string;
 }
 
@@ -22,24 +23,20 @@ interface Props {
  * masked value is still serialized into the RSC payload, and so remains in the
  * page source.
  */
-export default function SensitiveValue({ children, maskLength, className }: Props) {
+export default function SensitiveValue({ children, className }: Props) {
   const { hidden } = usePrivacy();
 
   if (!hidden) {
     return <span className={className}>{children}</span>;
   }
 
-  const inferredLength =
-    maskLength ??
-    (typeof children === "string" || typeof children === "number"
-      ? String(children).length
-      : MIN_MASK_LENGTH);
-
-  const length = Math.min(Math.max(inferredLength, MIN_MASK_LENGTH), MAX_MASK_LENGTH);
-
   return (
-    <span className={`select-none ${className ?? ""}`} aria-label="Dato oculto">
-      {MASK_CHARACTER.repeat(length)}
+    <span
+      className={`select-none ${className ?? ""}`}
+      aria-label="Dato oculto"
+      title="Dato oculto"
+    >
+      {MASK}
     </span>
   );
 }

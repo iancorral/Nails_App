@@ -5,6 +5,12 @@ import { authOptions } from "@/lib/auth";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { CHIHUAHUA_UTC_OFFSET, chihuahuaToUTC, getChihuahuaParts } from "@/lib/timezone";
+import {
+  MONETARY_BUCKETS,
+  RevenueBucket,
+  getAppointmentAmount,
+  getRevenueBucket,
+} from "@/lib/pricing";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -52,10 +58,7 @@ export async function GET(req: Request) {
   });
 
   const entries = appointments.map((app) => {
-    const amount =
-      app.finalPrice != null
-        ? Number(app.finalPrice)
-        : app.services.reduce((s, svc) => s + svc.price, 0);
+    const amount = getAppointmentAmount(app);
 
     // Convert UTC stored date to Chihuahua local date string
     const localDate = new Date(app.date.getTime() - CHIHUAHUA_UTC_OFFSET * 3600000);
@@ -66,23 +69,35 @@ export async function GET(req: Request) {
       id: app.id,
       date: dateStr,
       dateLabel,
-      paymentMethod: app.paymentMethod ?? "PENDING",
+      bucket: getRevenueBucket(amount, app.paymentMethod),
       paymentStatus: app.paymentStatus,
       amount,
     };
   });
 
   const summary = entries.reduce(
-    (acc, e) => {
-      const key = e.paymentMethod as keyof typeof acc;
-      if (key in acc) acc[key] = (acc[key] as number) + e.amount;
-      else acc.PENDING = (acc.PENDING ?? 0) + e.amount;
+    (acc, entry) => {
+      acc[entry.bucket] += entry.amount;
       return acc;
     },
-    { CASH: 0, TRANSFER: 0, CARD: 0, PENDING: 0 } as Record<string, number>
+    { CASH: 0, TRANSFER: 0, CARD: 0, PENDING: 0, FREE: 0 } as Record<RevenueBucket, number>
   );
 
-  const grandTotal = summary.CASH + summary.TRANSFER + summary.CARD + summary.PENDING;
+  // Free appointments are excluded from revenue by construction (they are worth
+  // $0), so the grand total only walks the monetary buckets.
+  const grandTotal = MONETARY_BUCKETS.reduce((total, bucket) => total + summary[bucket], 0);
+  const freeCount = entries.filter((entry) => entry.bucket === "FREE").length;
 
-  return NextResponse.json({ period, offset, periodLabel, entries, summary, grandTotal });
+  return NextResponse.json({
+    period,
+    offset,
+    periodLabel,
+    entries,
+    summary,
+    grandTotal,
+    // Appointments actually held in the period: cancelled ones are filtered out
+    // by the query above, free ones are included.
+    completedCount: entries.length,
+    freeCount,
+  });
 }

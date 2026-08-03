@@ -7,10 +7,12 @@ type Metrics = {
   period: string;
   totalConfirmed: number;
   totalCancelled: number;
+  freeCount: number;
+  chargedCount: number;
   revenue: number;
+  avgTicket: number;
   topService: { name: string; count: number } | null;
   avgDuration: number;
-  cancellationRate: number;
 };
 
 export default function MetricsDashboard() {
@@ -82,13 +84,33 @@ export default function MetricsDashboard() {
             <div className="bg-white rounded-3xl border-2 border-salon-brown/20 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
               <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Citas</p>
               <p className="text-2xl md:text-3xl font-black text-salon-brown">{metrics.totalConfirmed}</p>
-              <p className="text-[10px] text-salon-gray mt-1 font-medium">confirmadas</p>
+              {/* Cancellations no longer own a card, but stay visible as context. */}
+              <p className="text-[10px] text-salon-gray mt-1 font-medium">
+                confirmadas
+                {metrics.totalCancelled > 0 && (
+                  <span className="opacity-70"> · {metrics.totalCancelled} cancelada{metrics.totalCancelled !== 1 ? "s" : ""}</span>
+                )}
+              </p>
             </div>
 
             <div className="bg-white rounded-3xl border-2 border-salon-terracotta/20 p-4 md:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
-              <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Canceladas</p>
-              <p className="text-2xl md:text-3xl font-black text-salon-terracotta">{metrics.cancellationRate}%</p>
-              <p className="text-[10px] text-salon-gray mt-1 font-medium">{metrics.totalCancelled} citas</p>
+              <p className="text-[10px] uppercase tracking-wider text-salon-gray font-bold mb-1">Ticket promedio</p>
+              {metrics.chargedCount > 0 ? (
+                <>
+                  <SensitiveAmount
+                    value={metrics.avgTicket}
+                    className="block text-2xl md:text-3xl font-black text-salon-terracotta"
+                  />
+                  <p className="text-[10px] text-salon-gray mt-1 font-medium">
+                    por cita cobrada
+                    {metrics.freeCount > 0 && (
+                      <span className="opacity-70"> · {metrics.freeCount} gratis</span>
+                    )}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-salon-gray font-bold mt-2">Sin datos</p>
+              )}
             </div>
 
 

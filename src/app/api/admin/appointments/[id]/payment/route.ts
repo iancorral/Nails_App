@@ -6,7 +6,10 @@ import { z } from "zod";
 
 const paymentSchema = z.object({
   paymentStatus: z.enum(["PENDING", "PARTIAL", "PAID"]).optional(),
-  paymentMethod: z.enum(["CASH", "CARD", "TRANSFER"]).optional(),
+  // Nullable so a method can be cleared — a free appointment has none.
+  paymentMethod: z.enum(["CASH", "CARD", "TRANSFER"]).optional().nullable(),
+  // `0` marks a free (courtesy) appointment: it still counts as an appointment
+  // but never adds to revenue.
   finalPrice: z.number().min(0).optional().nullable(),
   depositPaid: z.boolean().optional(),
   depositAmount: z.number().min(0).optional().nullable(),

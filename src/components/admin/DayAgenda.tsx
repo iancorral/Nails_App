@@ -8,7 +8,9 @@ import {
 } from "@/lib/timezone";
 import WhatsAppIcon from "@/components/icons/WhatsAppIcon";
 import { METHOD_LABELS } from "@/components/admin/PaymentBadge";
+import FreeTag from "@/components/admin/FreeTag";
 import { SensitiveAmount } from "@/components/privacy";
+import { getAppointmentAmount, isFreeAmount } from "@/lib/pricing";
 import { normalizeWhatsappPhone } from "@/lib/whatsapp";
 
 type Service = { id: string; name: string; price: number; duration: number; category: string };
@@ -52,6 +54,13 @@ const PAYMENT_META: Record<string, { label: string; classes: string }> = {
   PENDING: { label: "Pendiente", classes: "bg-amber-50 border-amber-200 text-amber-800" },
   PARTIAL: { label: "Anticipo",  classes: "bg-blue-50 border-blue-200 text-blue-800" },
   PAID:    { label: "Pagado",    classes: "bg-green-50 border-green-200 text-green-800" },
+};
+
+// Courtesy appointments have no payment state to report, so they get their own
+// look instead of borrowing one of the payment colours.
+const FREE_META = {
+  label: "Sin cobro",
+  classes: "bg-salon-lavender/10 border-salon-lavender/30 text-salon-brown",
 };
 
 function timeToMinutes(t: string) {
@@ -322,8 +331,11 @@ function AppointmentCard({
   const startLabel = minutesToTimeLabel(startMin);
   const endLabel   = minutesToTimeLabel(endMin);
   const durationMin = endMin > startMin ? endMin - startMin : endMin + 1440 - startMin;
-  const payment    = PAYMENT_META[app.paymentStatus] ?? PAYMENT_META.PENDING;
-  const price      = app.finalPrice ?? app.services.reduce((a, s) => a + s.price, 0);
+  const price      = getAppointmentAmount(app);
+  const free       = isFreeAmount(price);
+  const payment    = free
+    ? FREE_META
+    : PAYMENT_META[app.paymentStatus] ?? PAYMENT_META.PENDING;
 
   // Las citas pasadas se muestran atenuadas (registro histórico), conservando
   // los botones funcionales para poder ajustar pago/notas a posteriori.
@@ -348,7 +360,11 @@ function AppointmentCard({
               ))}
             </div>
           </div>
-          <SensitiveAmount value={price} className="text-xs font-black shrink-0" />
+          {free ? (
+            <FreeTag className="shrink-0" />
+          ) : (
+            <SensitiveAmount value={price} className="text-xs font-black shrink-0" />
+          )}
         </div>
       </button>
 
@@ -359,7 +375,7 @@ function AppointmentCard({
           className="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-white/70 hover:bg-white transition-all"
         >
           {payment.label}
-          {app.paymentStatus === "PAID" && app.paymentMethod && METHOD_LABELS[app.paymentMethod]
+          {!free && app.paymentStatus === "PAID" && app.paymentMethod && METHOD_LABELS[app.paymentMethod]
             ? ` · ${METHOD_LABELS[app.paymentMethod]}`
             : ""}
         </button>
