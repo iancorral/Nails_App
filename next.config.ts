@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // A loyalty card is personal and identified by a cookie. A shared or
+        // proxy cache holding one client's card and serving it to the next
+        // person on the salon wifi is exactly the bug nobody notices in dev.
+        source: "/rewards",
+        headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
+      },
+      {
         source: "/(.*)",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },

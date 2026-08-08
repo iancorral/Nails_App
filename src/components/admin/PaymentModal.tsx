@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import AppointmentRewards from "./AppointmentRewards";
 
 type PaymentStatus = "PENDING" | "PARTIAL" | "PAID";
 type PaymentMethod = "CASH" | "CARD" | "TRANSFER";
@@ -71,6 +72,13 @@ export default function PaymentModal({
   const [saving, setSaving] = useState(false);
 
   const base = basePrice(services);
+
+  // Redeeming a reward writes the discounted price server-side; mirroring it
+  // here keeps the form honest, so pressing Guardar afterwards saves the
+  // discount instead of overwriting it with what was on screen before.
+  const applyRewardPrice = useCallback((next: number) => {
+    setFinalPrice(String(next));
+  }, []);
 
   const toggleFree = () => {
     const next = !isFree;
@@ -291,6 +299,11 @@ export default function PaymentModal({
 
             </>
           )}
+
+          <AppointmentRewards
+            appointmentId={appointmentId}
+            onFinalPriceChange={applyRewardPrice}
+          />
 
         </div>
 

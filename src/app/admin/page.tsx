@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import MetricsDashboard from '@/components/admin/MetricsDashboard';
 import MuralDecorations from '@/components/layout/MuralDecorations';
 import PaymentBadge from '@/components/admin/PaymentBadge';
@@ -186,7 +187,9 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 w-full md:flex md:w-auto md:gap-3">
+          {/* Six shortcuts: two rows of three on a phone stay tappable, where a
+              single row of six would not. */}
+          <div className="grid grid-cols-3 gap-2 w-full md:flex md:w-auto md:gap-3">
             <a href="/admin/calendar" className="flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-lavender/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
               <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">Agenda</span>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -196,6 +199,14 @@ export default function AdminDashboard() {
                 <line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
             </a>
+            <Link href="/admin/customers" className="flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-olive/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
+              <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">Clientas</span>
+              <svg className="w-6 h-6 text-salon-olive" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              </svg>
+            </Link>
             <a href="/admin/qr" className="flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-lavender/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
               <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">QR</span>
               <svg className="w-6 h-6 text-salon-lavender" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -208,6 +219,13 @@ export default function AdminDashboard() {
                 <rect x="18" y="18" width="3" height="3"/>
               </svg>
             </a>
+            <Link href="/admin/rewards" className="flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-yellow/60 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
+              <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">Premios</span>
+              <svg className="w-6 h-6 text-salon-terracotta" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="6"/>
+                <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
+              </svg>
+            </Link>
             <a href="/admin/schedule" className="flex flex-col items-center justify-center min-w-0 bg-white px-2 py-3 md:px-6 border-2 border-salon-terracotta/30 rounded-2xl shadow-sm hover:shadow-md hover:scale-105 transition-all">
               <span className="text-[10px] uppercase text-salon-gray font-bold tracking-wider mb-1">Horario</span>
               <svg className="w-6 h-6 text-salon-terracotta" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">

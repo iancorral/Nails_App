@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { addMinutes } from "date-fns";
 import { z } from "zod";
+import { resolveCustomerId } from "@/lib/customers";
 
 const createSchema = z.object({
   clientName: z
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
     const endDate = addMinutes(startDate, totalDuration);
 
     const normalizedPhone = clientPhone && clientPhone.trim() ? clientPhone.trim() : null;
+    const customerId = await resolveCustomerId(clientName, normalizedPhone);
 
     const appointment = await prisma.appointment.create({
       data: {
@@ -66,6 +68,7 @@ export async function POST(req: Request) {
         endDate,
         clientName,
         clientPhone: normalizedPhone,
+        customerId,
         status: "CONFIRMED",
         createdByAdmin: true,
         adminNotes: adminNotes ?? null,

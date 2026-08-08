@@ -46,3 +46,5 @@ prisma/create-admin.ts
 
 tangiblefixes.patch
 .gitignore
+
+.claude

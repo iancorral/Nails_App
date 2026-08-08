@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { addMinutes } from "date-fns";
 import { z } from "zod";
+import { resolveCustomerId } from "@/lib/customers";
 
 const createSchema = z.object({
   clientName: z
@@ -99,8 +100,12 @@ export async function PATCH(
     // Si el campo viene en la petición (aunque sea vacío) se actualiza:
     // vacío → null para poder quitar el teléfono de una cita existente.
     if (data.clientPhone !== undefined) {
-      updateData.clientPhone =
+      const phone =
         data.clientPhone && data.clientPhone.trim() ? data.clientPhone.trim() : null;
+      updateData.clientPhone = phone;
+      // Keep the customer link in step with the phone on the appointment.
+      // Clearing the phone unlinks it: there is no longer anyone to point at.
+      updateData.customerId = await resolveCustomerId(data.clientName, phone);
     }
     if (data.adminNotes !== undefined) updateData.adminNotes = data.adminNotes;
     if (serviceConnect) {
