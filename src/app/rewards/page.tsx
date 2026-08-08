@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { PASS_COOKIE, readDevicePass } from "@/lib/rewards-access";
 import { getRewardProgram, getStampBalance } from "@/lib/rewards.server";
 import EnrollForm from "@/components/rewards/EnrollForm";
+import StampCard from "@/components/rewards/StampCard";
 import { formatChihuahuaDate } from "@/lib/timezone";
 import type { Metadata } from "next";
 
@@ -31,62 +32,6 @@ function shortName(name: string): string {
   const [first, ...rest] = name.trim().split(/\s+/);
   const initial = rest[0]?.[0];
   return initial ? `${first} ${initial}.` : first;
-}
-
-/** A five-petal mark taken from the studio's mural motif. */
-function Petal({ filled }: { filled: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" className="w-[62%] h-[62%]" aria-hidden="true">
-      <g
-        fill={filled ? "currentColor" : "none"}
-        stroke={filled ? "none" : "currentColor"}
-        strokeWidth="1.6"
-      >
-        {[0, 72, 144, 216, 288].map((angle) => (
-          <ellipse
-            key={angle}
-            cx="12"
-            cy="5.6"
-            rx="3.1"
-            ry="4.6"
-            transform={`rotate(${angle} 12 12)`}
-          />
-        ))}
-      </g>
-      {filled && <circle cx="12" cy="12" r="2.6" fill="#C4522A" />}
-    </svg>
-  );
-}
-
-function StampGrid({ filled, total }: { filled: number; total: number }) {
-  return (
-    <div
-      className="grid gap-2"
-      style={{ gridTemplateColumns: `repeat(${total}, minmax(0, 1fr))` }}
-      role="img"
-      aria-label={`${filled} de ${total} sellos`}
-    >
-      {Array.from({ length: total }, (_, i) => {
-        const isFilled = i < filled;
-        const isNext = i === filled;
-        return (
-          <div
-            key={i}
-            aria-hidden="true"
-            className={`aspect-square rounded-full grid place-items-center border-2 ${
-              isFilled
-                ? "bg-salon-brown border-salon-brown text-salon-yellow"
-                : isNext
-                  ? "border-dashed border-salon-terracotta text-salon-terracotta/60"
-                  : "border-dashed border-salon-olive/35 text-salon-olive/30"
-            }`}
-          >
-            <Petal filled={isFilled} />
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -151,7 +96,7 @@ export default async function RewardsPage() {
             Tu tarjeta de sellos
           </p>
           <div className="opacity-35 mb-5">
-            <StampGrid filled={0} total={program.stampsRequired} />
+            <StampCard stamps={0} required={program.stampsRequired} track={false} />
           </div>
           <p className="text-xs text-salon-gray text-center leading-relaxed">
             Activa tu tarjeta con el código que te damos al terminar tu cita.
@@ -229,7 +174,7 @@ export default async function RewardsPage() {
           </p>
         </div>
 
-        <StampGrid filled={Math.min(stamps, required)} total={required} />
+        <StampCard stamps={stamps} required={required} />
 
         {complete ? (
           <div className="text-center mt-5">
