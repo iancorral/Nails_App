@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { addMinutes } from 'date-fns';
 import { z } from 'zod';
 import { isSlotBookable } from '@/lib/availability';
+import { resolveCustomerId } from '@/lib/customers';
 
 const bookingSchema = z.object({
   clientName: z
@@ -62,12 +63,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: slotCheck.reason }, { status: 409 });
     }
 
+    const customerId = await resolveCustomerId(clientName, clientPhone);
+
     const appointment = await prisma.appointment.create({
       data: {
         date: startDate,
         endDate: endDate,
         clientName,
         clientPhone,
+        customerId,
         status: 'CONFIRMED',
         services: {
           connect: serviceIds.map((id) => ({ id }))

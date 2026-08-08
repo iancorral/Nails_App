@@ -1,13 +1,32 @@
 "use client";
 
 import QRCodeSVG from "react-qr-code";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import MuralDecorations from '@/components/layout/MuralDecorations';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+// URLs que se graban en los stickers NFC. Apuntan a Tangible, no a Google ni a
+// nada externo: así el destino se puede cambiar sin volver a grabar el sticker.
+// Nunca llevan datos de ninguna clienta: un sticker en el mostrador lo lee
+// cualquiera que pase.
+const REVIEW_TAG_URL = `${APP_URL}/review`;
+const REWARDS_TAG_URL = `${APP_URL}/rewards`;
+
 export default function QRPage() {
   const qrRef = useRef<HTMLDivElement>(null);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+
+  const copyTagUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedUrl(url);
+      setTimeout(() => setCopiedUrl(null), 2000);
+    } catch {
+      // Clipboard bloqueado (contexto no seguro): la URL está visible y se
+      // puede seleccionar a mano, así que no hace falta molestar con un error.
+    }
+  };
 
   const downloadQR = () => {
     const svg = qrRef.current?.querySelector("svg");
@@ -101,6 +120,116 @@ export default function QRPage() {
         >
           Descargar QR
         </button>
+
+        {/* STICKER NFC — Reseñas de Google */}
+        <section className="mt-10">
+          <div className="flex items-center gap-3 opacity-70 mb-3">
+            <div className="h-[2px] w-8 bg-salon-terracotta"></div>
+            <h2 className="text-xs text-salon-terracotta font-bold tracking-widest uppercase">
+              Sticker NFC
+            </h2>
+          </div>
+
+          <div className="bg-white rounded-2xl border-2 border-salon-lavender/30 shadow-sm p-6 mb-4">
+            <p className="text-[10px] font-black text-salon-lavender uppercase tracking-widest mb-1">
+              Sticker 1
+            </p>
+            <p className="text-sm font-black text-salon-brown uppercase tracking-wide mb-1">
+              Reseñas de Google
+            </p>
+            <p className="text-xs text-salon-gray mb-5 leading-relaxed">
+              La clienta acerca su teléfono al sticker y se abre directo la ventana para
+              dejar la reseña.
+            </p>
+
+            <p className="text-[10px] font-black text-salon-gray uppercase tracking-widest mb-2">
+              URL a grabar en el sticker
+            </p>
+            <div className="flex items-center gap-2 mb-3">
+              <code className="flex-1 min-w-0 truncate bg-salon-bg border-2 border-salon-olive/20 rounded-xl px-3 py-2.5 text-xs text-salon-brown font-bold">
+                {REVIEW_TAG_URL}
+              </code>
+              <button
+                onClick={() => copyTagUrl(REVIEW_TAG_URL)}
+                className="shrink-0 px-4 py-2.5 bg-salon-brown text-salon-yellow rounded-xl text-[10px] font-black uppercase tracking-wider transition-transform hover:scale-[1.03] active:scale-[0.97]"
+              >
+                {copiedUrl === REVIEW_TAG_URL ? "Copiado" : "Copiar"}
+              </button>
+            </div>
+
+            <a
+              href="/review"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center py-3 border-2 border-salon-olive/30 rounded-xl text-[10px] font-black uppercase tracking-widest text-salon-olive hover:bg-salon-olive/5 transition-all"
+            >
+              Probar el enlace →
+            </a>
+          </div>
+
+          {/* Sticker 2 — tarjeta de recompensas */}
+          <div className="bg-white rounded-2xl border-2 border-salon-yellow/60 shadow-sm p-6">
+            <p className="text-[10px] font-black text-salon-terracotta uppercase tracking-widest mb-1">
+              Sticker 2
+            </p>
+            <p className="text-sm font-black text-salon-brown uppercase tracking-wide mb-1">
+              Tarjeta de sellos
+            </p>
+            <p className="text-xs text-salon-gray mb-5 leading-relaxed">
+              Abre su tarjeta de recompensas. El sticker no guarda ningún dato de la
+              clienta: solo abre la página, y ahí se identifica su propio teléfono.
+            </p>
+
+            <p className="text-[10px] font-black text-salon-gray uppercase tracking-widest mb-2">
+              URL a grabar en el sticker
+            </p>
+            <div className="flex items-center gap-2 mb-3">
+              <code className="flex-1 min-w-0 truncate bg-salon-bg border-2 border-salon-olive/20 rounded-xl px-3 py-2.5 text-xs text-salon-brown font-bold">
+                {REWARDS_TAG_URL}
+              </code>
+              <button
+                onClick={() => copyTagUrl(REWARDS_TAG_URL)}
+                className="shrink-0 px-4 py-2.5 bg-salon-brown text-salon-yellow rounded-xl text-[10px] font-black uppercase tracking-wider transition-transform hover:scale-[1.03] active:scale-[0.97]"
+              >
+                {copiedUrl === REWARDS_TAG_URL ? "Copiado" : "Copiar"}
+              </button>
+            </div>
+
+            <a
+              href="/rewards"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center py-3 border-2 border-salon-olive/30 rounded-xl text-[10px] font-black uppercase tracking-widest text-salon-olive hover:bg-salon-olive/5 transition-all"
+            >
+              Probar el enlace →
+            </a>
+          </div>
+
+          {/* Instrucciones comunes a los dos stickers */}
+          <div className="bg-white rounded-2xl border-2 border-salon-olive/20 shadow-sm p-6 mt-4">
+            <p className="text-[10px] font-black text-salon-gray uppercase tracking-widest mb-2">
+              Cómo grabarlo
+            </p>
+            <div className="space-y-2 text-xs text-salon-gray leading-relaxed">
+              <p>1. Instala la app <span className="font-bold text-salon-brown">NFC Tools</span> (gratis, iPhone y Android)</p>
+              <p>2. Escribir → Añadir un registro → <span className="font-bold text-salon-brown">URL</span> → pega la URL del sticker que estés grabando</p>
+              <p>3. Acerca el sticker al teléfono y mantenlo quieto hasta que confirme</p>
+              <p>4. Pruébalo con un iPhone y con un Android antes de pegarlo</p>
+              <p>5. Protégelo con contraseña (Otros → Definir contraseña). <span className="font-bold text-salon-terracotta">No uses el bloqueo permanente</span>: no tiene vuelta atrás</p>
+            </div>
+
+            <div className="mt-5 pt-5 border-t border-salon-gray/15 space-y-2 text-xs text-salon-gray leading-relaxed">
+              <p>
+                <span className="font-bold text-salon-brown">Stickers:</span> NTAG215 de 25–30 mm,
+                en PET o epoxi (aguantan acetona y lavado). Compra al menos 6.
+              </p>
+              <p>
+                <span className="font-bold text-salon-terracotta">Sobre metal o espejo</span> un
+                sticker normal no funciona: necesitas stickers &quot;on-metal&quot;.
+              </p>
+            </div>
+          </div>
+        </section>
 
       </div>
     </main>

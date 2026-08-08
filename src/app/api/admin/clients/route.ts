@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { normalizePhone } from "@/lib/phone";
 import type { Prisma } from "@prisma/client";
+
+/** Candidates pulled before ranking by last visit, so the top 8 are the real top 8. */
+const SEARCH_CANDIDATES = 40;
+const SEARCH_RESULTS = 8;
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -13,6 +18,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q");
   const phone = searchParams.get("phone");
+
   if (q !== null) {
     const term = q.trim();
     if (term.length < 2) {
@@ -20,56 +26,68 @@ export async function GET(req: Request) {
     }
 
     const digits = term.replace(/\D/g, "");
-    const or: Prisma.AppointmentWhereInput[] = [
-      { clientName: { contains: term, mode: "insensitive" } },
+    const or: Prisma.CustomerWhereInput[] = [
+      { name: { contains: term, mode: "insensitive" } },
     ];
     if (digits.length >= 3) {
-      or.push({ clientPhone: { contains: digits } });
+      or.push({ phone: { contains: digits } });
     }
-    const matches = await prisma.appointment.findMany({
-      where: { OR: or, status: { not: "CANCELLED" } },
-      select: { clientName: true, clientPhone: true, date: true },
-      orderBy: { date: "desc" },
-      take: 200,
+
+    const customers = await prisma.customer.findMany({
+      where: { OR: or },
+      take: SEARCH_CANDIDATES,
     });
 
-    type Client = { name: string; phone: string | null; visits: number; lastVisit: Date };
-    const byClient = new Map<string, Client>();
-
-    for (const m of matches) {
-      const phoneDigits = m.clientPhone?.replace(/\D/g, "") ?? "";
-      const key = phoneDigits
-        ? `p:${phoneDigits}`
-        : `n:${m.clientName.trim().toLowerCase()}`;
-
-      const existing = byClient.get(key);
-      if (existing) {
-        existing.visits += 1;
-        if (m.date > existing.lastVisit) existing.lastVisit = m.date;
-      } else {
-        byClient.set(key, {
-          name: m.clientName,
-          phone: m.clientPhone,
-          visits: 1,
-          lastVisit: m.date,
-        });
-      }
+    if (customers.length === 0) {
+      return NextResponse.json({ clients: [] });
     }
 
-    const clients = [...byClient.values()]
+    // Visit count and last visit come from the appointments, not from a stored
+    // counter, so they can never drift away from the actual agenda.
+    const stats = await prisma.appointment.groupBy({
+      by: ["customerId"],
+      where: {
+        customerId: { in: customers.map((c) => c.id) },
+        status: { not: "CANCELLED" },
+      },
+      _count: { _all: true },
+      _max: { date: true },
+    });
+
+    const statsByCustomer = new Map(stats.map((s) => [s.customerId, s]));
+
+    const clients = customers
+      .map((customer) => {
+        const stat = statsByCustomer.get(customer.id);
+        return {
+          name: customer.name,
+          phone: customer.phone,
+          visits: stat?._count._all ?? 0,
+          // A customer with no visits yet still sorts, just last.
+          lastVisit: stat?._max.date ?? customer.createdAt,
+        };
+      })
       .sort((a, b) => b.lastVisit.getTime() - a.lastVisit.getTime())
-      .slice(0, 8);
+      .slice(0, SEARCH_RESULTS);
 
     return NextResponse.json({ clients });
   }
 
-  if (!phone || phone.replace(/\D/g, "").length < 7) {
+  const normalized = normalizePhone(phone);
+  if (!normalized) {
     return NextResponse.json({ appointments: [], total: 0 });
   }
 
-  const digits = phone.replace(/\D/g, "");
+  const customer = await prisma.customer.findUnique({
+    where: { phone: normalized },
+    select: { id: true },
+  });
 
-  const where = { clientPhone: { contains: digits }, status: { not: "CANCELLED" } };
+  if (!customer) {
+    return NextResponse.json({ appointments: [], total: 0 });
+  }
+
+  const where = { customerId: customer.id, status: { not: "CANCELLED" } };
 
   const [appointments, total] = await Promise.all([
     prisma.appointment.findMany({
