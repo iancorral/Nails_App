@@ -18,7 +18,11 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
  */
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const CODE_LENGTH = 6;
-export const CODE_TTL_MINUTES = 15;
+/**
+ * Long enough that a client who steps outside to find her phone is not locked
+ * out, short enough that a code left on a counter is worthless by closing time.
+ */
+export const CODE_TTL_MINUTES = 30;
 /** Wrong guesses a single code tolerates before it stops working. */
 export const MAX_CODE_ATTEMPTS = 5;
 
@@ -46,9 +50,20 @@ export function hashClaimCode(code: string): string {
   return createHash("sha256").update(normalizeClaimCode(code)).digest("hex");
 }
 
-/** Accepts what a person actually types: lower case, spaces, stray dashes. */
+/**
+ * Accepts what a person actually types: lower case, spaces, stray dashes.
+ *
+ * I, L, O and U can never appear in a generated code, so reading them as the
+ * digits they are being mistaken for is unambiguous — it can only ever rescue a
+ * misread, never turn one valid code into another.
+ */
+const LOOKALIKES: Record<string, string> = { O: "0", I: "1", L: "1", U: "V" };
+
 export function normalizeClaimCode(raw: string): string {
-  return raw.toUpperCase().replace(/[^0-9A-Z]/g, "");
+  return raw
+    .toUpperCase()
+    .replace(/[^0-9A-Z]/g, "")
+    .replace(/[OILU]/g, (char) => LOOKALIKES[char]);
 }
 
 // ── Device pass ────────────────────────────────────────────────────────────

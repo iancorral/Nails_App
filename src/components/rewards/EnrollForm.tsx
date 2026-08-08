@@ -19,9 +19,18 @@ export default function EnrollForm() {
   const code = chars.join("");
 
   const setChar = (index: number, value: string) => {
-    // Accept a pasted code in any box, and ignore the characters the alphabet
+    // Accept a pasted code in any box, and ignore characters the alphabet
     // deliberately leaves out so a misread I or O does not become a dead end.
-    const cleaned = value.toUpperCase().replace(/[^0-9A-Z]/g, "");
+    let cleaned = value.toUpperCase().replace(/[^0-9A-Z]/g, "");
+
+    // Typing into a box that already holds a character gives us "old"+"new".
+    // Without this the old character would be kept and the new one pushed into
+    // the next box, silently shifting the rest of the code — which produces a
+    // wrong code that looks right on screen.
+    if (cleaned.length === 2 && chars[index] && cleaned[0] === chars[index]) {
+      cleaned = cleaned.slice(1);
+    }
+
     if (!cleaned) {
       setChars((prev) => prev.map((c, i) => (i === index ? "" : c)));
       return;

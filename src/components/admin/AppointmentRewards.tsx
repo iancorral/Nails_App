@@ -231,8 +231,10 @@ export default function AppointmentRewards({ appointmentId, onFinalPriceChange }
         </>
       )}
 
-      {/* Activación de la tarjeta digital — solo una vez por clienta */}
-      {state.customer && !state.enrolled && (
+      {/* Activación de la tarjeta digital.
+          Se puede volver a generar un código aunque ya esté activada: cambia de
+          teléfono, borra cookies, o simplemente no alcanzó a escribirlo. */}
+      {state.customer && (
         <div className="mt-3 pt-3 border-t border-salon-brown/10">
           {issued ? (
             <>
@@ -243,20 +245,40 @@ export default function AppointmentRewards({ appointmentId, onFinalPriceChange }
                 {issued.code}
               </p>
               <p className="text-[10px] text-salon-gray text-center mt-1.5 leading-relaxed">
-                Un solo uso · vence en 15 min. Que lo escriba en{" "}
-                <span className="font-bold text-salon-brown">studiotangible.com.mx/rewards</span>{" "}
-                o acercando su teléfono al sticker.
+                Un solo uso · vence a las{" "}
+                <span className="font-bold text-salon-brown">
+                  {new Date(issued.expiresAt).toLocaleTimeString("es-MX", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+                . Que lo escriba acercando su teléfono al sticker de recompensas.
               </p>
+              <button
+                type="button"
+                onClick={issueCode}
+                disabled={busy}
+                className="w-full mt-2 text-[10px] font-black uppercase tracking-widest text-salon-gray hover:text-salon-brown disabled:opacity-40"
+              >
+                Generar otro código
+              </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={issueCode}
-              disabled={busy}
-              className="w-full py-2.5 rounded-xl border-2 border-salon-brown/25 text-salon-brown text-[10px] font-black uppercase tracking-widest transition-colors hover:bg-salon-brown/5 disabled:opacity-40"
-            >
-              Activar su tarjeta digital
-            </button>
+            <>
+              {state.enrolled && (
+                <p className="text-[10px] text-salon-olive font-bold mb-2 text-center">
+                  Ya tiene su tarjeta activada
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={issueCode}
+                disabled={busy}
+                className="w-full py-2.5 rounded-xl border-2 border-salon-brown/25 text-salon-brown text-[10px] font-black uppercase tracking-widest transition-colors hover:bg-salon-brown/5 disabled:opacity-40"
+              >
+                {state.enrolled ? "Activar en otro teléfono" : "Activar su tarjeta digital"}
+              </button>
+            </>
           )}
         </div>
       )}
